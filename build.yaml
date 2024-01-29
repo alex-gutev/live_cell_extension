@@ -1,0 +1,15 @@
+targets:
+  $default:
+    builders:
+      generators|annotations: # generators|annotations: Refers to the simple_generator builder when dealing with files annotated with annotations.
+        enabled: true
+
+builders:
+  live_cell_extension:
+    target: ":live_cell_extension" # Generator name
+    import: "package:live_cell_extension/live_cell_extension.dart"
+    builder_factories: ["generateCellExtension"] # Builder name(BuilderOption) this is a definition
+    build_extensions: { ".dart": [".g.part"] }
+    auto_apply: dependents
+    build_to: cache
+    applies_builders: ["source_gen|combining_builder"]
