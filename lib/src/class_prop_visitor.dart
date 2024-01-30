@@ -31,7 +31,7 @@ class ClassPropVisitor extends SimpleElementVisitor<void> {
 
   @override
   void visitFieldElement(FieldElement element) {
-    if (element.isFinal && element.isPublic) {
+    if (element.isPublic && element.setter == null) {
       _fields.add(element);
     }
   }
