@@ -1,26 +1,38 @@
+import 'dart:collection';
+
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/visitor.dart';
 
 /// Visits a class and extracts information about its properties
 class ClassPropVisitor extends SimpleElementVisitor<void> {
-  /// The name of the class
-  String get className => _className;
+  /// The properties of the class which can be accessed
+  UnmodifiableListView<FieldElement> get fields =>
+      UnmodifiableListView(_fields);
 
-  /// The properties of the class mapped to their corresponding types
-  Map<String, dynamic> get fields => _fields;
+  /// The properties of the class which can be initialized in the constructor
+  UnmodifiableListView<FieldElement> get mutableFields =>
+      UnmodifiableListView(_mutableFields);
 
-  var _className = '';
-  Map<String, dynamic> _fields = {};
+  final List<FieldElement> _fields = [];
+  final List<FieldElement> _mutableFields =[];
 
   @override
   void visitConstructorElement(ConstructorElement element) {
-    final returnType = element.returnType.toString();
-    _className = returnType.replaceAll("*", ""); // ClassName* -> ClassName
+    if (element.name.isEmpty) {
+      for (final param in element.parameters) {
+        if (param is FieldFormalParameterElement) {
+          if (param.field != null) {
+            _mutableFields.add(param.field!);
+          }
+        }
+      }
+    }
   }
 
   @override
   void visitFieldElement(FieldElement element) {
-    final elementType = element.type.toString().replaceAll("*", "");
-    _fields[element.name] = elementType;
+    if (element.isFinal && element.isPublic) {
+      _fields.add(element);
+    }
   }
 }
