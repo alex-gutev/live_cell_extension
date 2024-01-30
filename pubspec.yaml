@@ -10,18 +10,16 @@ dependencies:
   live_cells:
     path: ../../live_cells
 
-  flutter:
-    sdk: flutter
-
   build:
   source_gen:
   analyzer:
 
 dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^2.0.0
+  test:
   build_runner:
+  build_verify:
+  build_test:
+  source_gen_test: ^1.0.6
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
