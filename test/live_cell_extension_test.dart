@@ -31,6 +31,14 @@ Future<void> main() async {
   testAnnotatedElements(
     await initializeLibraryReaderForDirectory(
         'test/src',
+        'no_constructor.dart'
+    ),
+    CellExtensionGenerator(),
+  );
+
+  testAnnotatedElements(
+    await initializeLibraryReaderForDirectory(
+        'test/src',
         'error_no_final_properties.dart'
     ),
     CellExtensionGenerator(),
