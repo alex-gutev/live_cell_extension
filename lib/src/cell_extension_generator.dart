@@ -24,7 +24,8 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
     if (visitor.fields.isEmpty) {
       throw InvalidGenerationSource(
           'No public final properties found on class ${element.name}.',
-          todo: 'Make the properties of class ${element.name} or remove the CellExtension annotation.',
+          todo: 'Make the properties of class ${element.name} public and final'
+              ' or remove the CellExtension annotation.',
           element: element
       );
     }
@@ -36,7 +37,7 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
       if (visitor.mutableFields.isEmpty) {
         throw InvalidGenerationSource(
             'The constructor of class ${element.name} does not have any field formal parameters.',
-            todo: 'Add field parameters to the constructor of ${element.name} or '
+            todo: 'Add field formal parameters to the constructor of ${element.name} or '
                 'remove `mutable: true` from the CellExtension annotation.',
             element: element
         );
