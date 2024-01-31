@@ -27,4 +27,20 @@ Future<void> main() async {
     ),
     CellExtensionGenerator(),
   );
+
+  testAnnotatedElements(
+    await initializeLibraryReaderForDirectory(
+        'test/src',
+        'error_no_final_properties.dart'
+    ),
+    CellExtensionGenerator(),
+  );
+
+  testAnnotatedElements(
+    await initializeLibraryReaderForDirectory(
+        'test/src',
+        'error_no_constructor.dart'
+    ),
+    CellExtensionGenerator(),
+  );
 }
