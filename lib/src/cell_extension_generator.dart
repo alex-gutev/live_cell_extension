@@ -119,9 +119,17 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
     buffer.writeln('}) {');
     buffer.writeln('return $className(');
 
-    for (final field in visitor.mutableFields) {
-      final name = field.name;
-      buffer.writeln('$name: $name ?? instance.$name,');
+    for (final param in visitor.constructor!.parameters) {
+      if (param.isInitializingFormal && param is FieldFormalParameterElement) {
+        final field = param.field!;
+        final name = field.name;
+
+        if (param.isNamed) {
+          buffer.write('$name: ');
+        }
+
+        buffer.writeln('$name ?? instance.$name,');
+      }
     }
 
     buffer.writeln(');');

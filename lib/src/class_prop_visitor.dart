@@ -13,14 +13,21 @@ class ClassPropVisitor extends SimpleElementVisitor<void> {
   UnmodifiableListView<FieldElement> get mutableFields =>
       UnmodifiableListView(_mutableFields);
 
+  /// The constructor to use when creating an instance of the class
+  ConstructorElement? get constructor => _constructor;
+
   final List<FieldElement> _fields = [];
   final List<FieldElement> _mutableFields =[];
+
+  ConstructorElement? _constructor;
 
   @override
   void visitConstructorElement(ConstructorElement element) {
     if (element.name.isEmpty) {
+      _constructor = element;
+
       for (final param in element.parameters) {
-        if (param is FieldFormalParameterElement) {
+        if (param.isInitializingFormal && param is FieldFormalParameterElement) {
           if (param.field != null) {
             _mutableFields.add(param.field!);
           }
