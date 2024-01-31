@@ -12,7 +12,11 @@ extension PersonCellExtension on ValueCell<Person> {
   ValueCell<int> get age => apply((value) => value.age);
   ValueCell<String> get fullName => apply((value) => value.fullName);
 }
-'''
+''',
+  expectedLogItems: [
+    'value is a reserved ValueCell field identifier. ValueCell accessor will not be generated.',
+    'previous is a reserved ValueCell field identifier. ValueCell accessor will not be generated.'
+  ]
 )
 @CellExtension()
 class Person {
@@ -27,12 +31,21 @@ class Person {
   String? address;
   final int _id;
 
+  // Accessors not generated for properties with reserved names
+
+  final String value;
+  final Person? previous;
+
+  // Accessors not generated for static properties
+
   static final key = 'personKey';
 
   Person({
     required this.firstName,
     required this.lastName,
     required this.age,
+    this.value = '',
+    this.previous = null,
     int id = 0,
   }) : _id = id;
 }

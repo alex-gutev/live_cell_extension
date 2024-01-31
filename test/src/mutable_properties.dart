@@ -42,7 +42,13 @@ extension PersonMutableCellExtension on MutableCell<Person> {
         value = _copyWith(value, age: p);
       });
 }
-'''
+''',
+    expectedLogItems: [
+      'value is a reserved ValueCell field identifier. ValueCell accessor will not be generated.',
+      'previous is a reserved ValueCell field identifier. ValueCell accessor will not be generated.',
+      'value is a reserved MutableCell field identifier. MutableCell accessor will not be generated.',
+      'previous is a reserved MutableCell field identifier. MutableCell accessor will not be generated.'
+    ]
 )
 @CellExtension(mutable: true)
 class Person {
@@ -57,12 +63,21 @@ class Person {
   String? address;
   final int _id;
 
+  // Accessors not generated for properties with reserved names
+
+  final String value;
+  final Person? previous;
+
+  // Accessors not generated for static properties
+
   static final key = 'personKey';
 
   Person({
     required this.firstName,
     required this.lastName,
     required this.age,
+    this.value = '',
+    this.previous = null,
     int id = 0,
   }) : _id = id;
 }
