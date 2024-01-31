@@ -56,6 +56,8 @@ class Person {
   String? address;
   final int _id;
 
+  static final key = 'personKey';
+
   Person(this.firstName, this.lastName, {
     required this.age,
     int id = 0,
