@@ -227,8 +227,8 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
 
     for (final field in fields) {
       if (reservedFieldNames.contains(field.name)) {
-        log.info('${field.name} is a reserved $extType field identifier. '
-            '$extType accessor will not be generated.');
+        log.info('${field.name} is reserved for $extType properties. '
+            'Accessor not be generated.');
       }
       else {
         filtered.add(field);

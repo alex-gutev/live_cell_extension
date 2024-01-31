@@ -14,8 +14,8 @@ extension PersonCellExtension on ValueCell<Person> {
 }
 ''',
   expectedLogItems: [
-    'value is a reserved ValueCell field identifier. ValueCell accessor will not be generated.',
-    'previous is a reserved ValueCell field identifier. ValueCell accessor will not be generated.'
+    'value is reserved for ValueCell properties. Accessor not be generated.',
+    'previous is reserved for ValueCell properties. Accessor not be generated.'
   ]
 )
 @CellExtension()

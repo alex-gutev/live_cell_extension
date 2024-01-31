@@ -44,10 +44,10 @@ extension PersonMutableCellExtension on MutableCell<Person> {
 }
 ''',
     expectedLogItems: [
-      'value is a reserved ValueCell field identifier. ValueCell accessor will not be generated.',
-      'previous is a reserved ValueCell field identifier. ValueCell accessor will not be generated.',
-      'value is a reserved MutableCell field identifier. MutableCell accessor will not be generated.',
-      'previous is a reserved MutableCell field identifier. MutableCell accessor will not be generated.'
+      'value is reserved for ValueCell properties. Accessor not be generated.',
+      'previous is reserved for ValueCell properties. Accessor not be generated.',
+      'value is reserved for MutableCell properties. Accessor not be generated.',
+      'previous is reserved for MutableCell properties. Accessor not be generated.'
     ]
 )
 @CellExtension(mutable: true)
