@@ -11,9 +11,9 @@ environment:
 dependencies:
   live_cells: ^0.10.0
 
-  build:
-  source_gen:
-  analyzer:
+  build: ^2.4.1
+  source_gen: ^1.5.0
+  analyzer: ^6.2.0
 
 dev_dependencies:
   test:
