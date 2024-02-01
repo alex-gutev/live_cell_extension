@@ -7,10 +7,27 @@ import 'package:source_gen_test/annotations.dart';
   r'''
 // Extends ValueCell with accessors for Person properties
 extension PersonCellExtension on ValueCell<Person> {
-  ValueCell<String> get firstName => apply((value) => value.firstName);
-  ValueCell<String> get lastName => apply((value) => value.lastName);
-  ValueCell<int> get age => apply((value) => value.age);
-  ValueCell<String> get fullName => apply((value) => value.fullName);
+  ValueCell<String> get firstName => apply((value) => value.firstName,
+      key: _$ValueCellPropKeyPerson(this, 'firstName'));
+  ValueCell<String> get lastName => apply((value) => value.lastName,
+      key: _$ValueCellPropKeyPerson(this, 'lastName'));
+  ValueCell<int> get age =>
+      apply((value) => value.age, key: _$ValueCellPropKeyPerson(this, 'age'));
+  ValueCell<String> get fullName => apply((value) => value.fullName,
+      key: _$ValueCellPropKeyPerson(this, 'fullName'));
+}
+
+class _$ValueCellPropKeyPerson {
+  final ValueCell _cell;
+  final String _prop;
+  _$ValueCellPropKeyPerson(this._cell, this._prop);
+  @override
+  bool operator ==(other) =>
+      other is _$ValueCellPropKeyPerson &&
+      _cell == other._cell &&
+      _prop == other._prop;
+  @override
+  int get hashCode => Object.hash(runtimeType, _cell, _prop);
 }
 ''',
   expectedLogItems: [

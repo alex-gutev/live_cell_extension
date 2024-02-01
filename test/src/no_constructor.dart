@@ -9,8 +9,23 @@ import 'package:source_gen_test/annotations.dart';
   r'''
 // Extends ValueCell with accessors for MyClass properties
 extension MyClassCellExtension on ValueCell<MyClass> {
-  ValueCell<int> get a => apply((value) => value.a);
-  ValueCell<int> get b => apply((value) => value.b);
+  ValueCell<int> get a =>
+      apply((value) => value.a, key: _$ValueCellPropKeyMyClass(this, 'a'));
+  ValueCell<int> get b =>
+      apply((value) => value.b, key: _$ValueCellPropKeyMyClass(this, 'b'));
+}
+
+class _$ValueCellPropKeyMyClass {
+  final ValueCell _cell;
+  final String _prop;
+  _$ValueCellPropKeyMyClass(this._cell, this._prop);
+  @override
+  bool operator ==(other) =>
+      other is _$ValueCellPropKeyMyClass &&
+      _cell == other._cell &&
+      _prop == other._prop;
+  @override
+  int get hashCode => Object.hash(runtimeType, _cell, _prop);
 }
 '''
 )
