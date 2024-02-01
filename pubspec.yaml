@@ -1,6 +1,6 @@
 name: live_cell_extension
 description: "A new Flutter project."
-version: 0.0.1
+version: 0.1.0
 
 environment:
   sdk: '>=3.2.5 <4.0.0'
