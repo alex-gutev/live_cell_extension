@@ -1,6 +1,8 @@
 name: live_cell_extension
-description: "A new Flutter project."
+description: Generates cell property accessors for cells annotated with CellExtension from the live_cells package.
 version: 0.1.0
+repository: https://github.com/alex-gutev/live_cell_extension
+issue_tracker: https://github.com/alex-gutev/live_cell_extension/issues
 
 environment:
   sdk: '>=3.2.5 <4.0.0'
