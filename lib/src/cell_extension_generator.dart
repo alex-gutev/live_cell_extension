@@ -112,24 +112,30 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
   String _generateCellExtension(String className, List<FieldElement> fields) {
     final buffer = StringBuffer();
 
+    final keyClass = '_\$ValueCellPropKey$className';
+
     buffer.writeln('// Extends ValueCell with accessors for $className properties');
     buffer.writeln('extension ${className}CellExtension on ValueCell<$className> {');
 
     for (final field in fields) {
-      buffer.writeln(_generateCellAccessor(field));
+      buffer.writeln(_generateCellAccessor(field, keyClass));
     }
 
     buffer.writeln('}');
+    buffer.write(_generatePropKeyClass(keyClass));
 
     return buffer.toString();
   }
 
   /// Generate an accessor for a class property which returns a [ValueCell] holding a [type].
-  String _generateCellAccessor(FieldElement field) {
+  String _generateCellAccessor(FieldElement field, String keyClass) {
     final name = field.name;
     final type = field.type.toString();
 
-    return 'ValueCell<$type> get $name => apply((value) => value.$name);';
+    return 'ValueCell<$type> get $name => apply('
+        '(value) => value.$name,'
+        "key: $keyClass(this, '$name')"
+        ');';
   }
 
   /// Generate a [MutableCell] extension providing accessors for [fields].
@@ -140,6 +146,8 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
   }) {
     final buffer = StringBuffer();
 
+    final keyClass = '_\$MutableCellPropKey$className';
+    
     buffer.writeln('// Extends MutableCell with accessors for $className properties');
     buffer.writeln('extension ${className}MutableCellExtension on MutableCell<$className> {');
 
@@ -150,29 +158,34 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
     ));
 
     for (final field in fields) {
-      buffer.writeln(_generateMutableAccessor(field));
+      buffer.writeln(_generateMutableAccessor(field, keyClass));
     }
 
     buffer.writeln('}');
+    buffer.write(_generatePropKeyClass(keyClass));
 
     return buffer.toString();
   }
 
 
   /// Generate an accessor for a class property which returns a [MutableCell] holding a [type].
-  String _generateMutableAccessor(FieldElement field) {
+  String _generateMutableAccessor(FieldElement field, String keyClass) {
     final name = field.name;
     final type = field.type.toString();
 
-    return 'MutableCell<$type> get $name => [this].mutableComputeCell(() => value.$name,'
-        '(p) { value = _copyWith(value, $name: p); });';
+    return 'MutableCell<$type> get $name => MutableCellView('
+        'argument: this,'
+        "key: $keyClass(this, '$name'),"
+        'compute: () => value.$name,'
+        'reverse: (p) { value = _copyWith(value, $name: p); }'
+        ');';
   }
 
   /// Generate a _copyWith static method for [className] which calls [constructor].
   String _generateCopyWithMethod({
     required String className,
     required ConstructorElement constructor,
-    required List<FieldElement> fields
+    required List<FieldElement> fields,
   }) {
     final buffer = StringBuffer();
     buffer.writeln('static $className _copyWith($className instance, {');
@@ -211,6 +224,30 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
     buffer.writeln(');');
     buffer.writeln('}');
 
+    return buffer.toString();
+  }
+
+  /// Generate a property cell key class named [name].
+  String _generatePropKeyClass(String name) {
+    final buffer = StringBuffer();
+
+    buffer.writeln('class $name {');
+    buffer.writeln('final ValueCell _cell;');
+    buffer.writeln('final String _prop;');
+    buffer.writeln('$name(this._cell, this._prop);');
+
+    buffer.writeln('@override');
+    buffer.writeln(
+        'bool operator==(other) => other is $name && '
+        '_cell == other._cell && '
+        '_prop == other._prop;'
+    );
+
+    buffer.writeln('@override');
+    buffer.writeln('int get hashCode => Object.hash(runtimeType, _cell, _prop);');
+
+    buffer.writeln('}');
+    
     return buffer.toString();
   }
 
