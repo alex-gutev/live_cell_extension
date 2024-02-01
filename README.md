@@ -48,9 +48,10 @@ You'll also need to add this package and `build_runner` to the `dev_dependencies
 dev_dependencies:
   build_runner:
   live_cell_extension: ^0.1.0
+  ...
 ```
 
-See the example in the `example` directory for more details on how to setup your project.
+See the example in the `example` directory for an example of how to setup your project.
 
 ## Usage
 
@@ -113,7 +114,7 @@ the value of the property of the instance of the class held in the cell, on whic
 referenced. The returned `ValueCell`'s are computed cells which update their own values whenever the
 values of the referenced properties of the instance change.
 
-`person.firstName` is in effect equivalent to the following:
+`person.firstName` is roughly equivalent to the following:
 
 ```dart
 ValueCell.computed(() => person().firstName);
@@ -122,11 +123,8 @@ ValueCell.computed(() => person().firstName);
 Example:
 
 ```dart
-final fullName = person.fullName();
-final age = person.age();
-
 ValueCell.watch(() {
-  print('Person ${fullName()} - ${age()}');
+  print('Person ${person.fullName()} - ${person.age()}');
 });
 
 // Prints: Person John Smith - 25
@@ -196,23 +194,17 @@ Example:
 ```dart
 final person = MutableCell(Person(firstName: 'John', lastName: 'Smith', age: 25));
 
-final firstName = person.firstName;
-final lastName = person.lastName;
-final age = person.age;
-
-final fullName = person.fullName;
-
 ValueCell.watch(() {
-  print('Person ${fullName()} - ${age()}');
+  print('Person ${person.fullName()} - ${person.age()}');
 });
 
 // Prints: Person John Smith 30
-age.value = 30;
+person.age.value = 30;
 
 // Prints: Person Jane Doe 30
 MutableCell.batch(() {
-  firstName.value = 'Jane';
-  lastName.value = 'Doe';
+  person.firstName.value = 'Jane';
+  person.lastName.value = 'Doe';
 });
 ```
 
