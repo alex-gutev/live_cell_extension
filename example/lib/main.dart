@@ -19,7 +19,7 @@ class Person {
   final String lastName;
   final int age;
 
-  Person({
+  const Person({
     required this.firstName,
     required this.lastName,
     required this.age
@@ -61,11 +61,17 @@ class MyHomePage extends CellWidget with CellInitializer {
   @override
   Widget build(BuildContext context) {
     // A cell to hold the person's details
-    final person = MutableCell(Person(
+    final person = cell(() => MutableCell(const Person(
         firstName: '',
         lastName: '',
         age: 25
-    ));
+    )));
+
+    watch(() {
+      // This is to demonstrate that all observers of person are notified
+      // when a property changes
+      print('Person changed: ${person().fullName}');
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -73,27 +79,95 @@ class MyHomePage extends CellWidget with CellInitializer {
       ),
       body: Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'Person Details:',
-            ),
-            const SizedBox(height: 10),
-            CellTextField(
-              content: cell(() => person.firstName),
-              decoration: const InputDecoration(
-                label: Text('First Name')
+          children: [
+            Flexible(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      const Text(
+                        'Person Details:',
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Notice it is not necessary to wrap the property cells
+                      // in cell(...) or to store them in a local variable.
+
+                      CellTextField(
+                        content: person.firstName,
+                        decoration: const InputDecoration(
+                          label: Text('First Name')
+                        ),
+                      ),
+                      CellTextField(
+                        content: person.lastName,
+                        decoration: const InputDecoration(
+                            label: Text('Last Name')
+                        ),
+                      ),
+                      numField(person.age, 'Age'),
+                      const SizedBox(height: 20),
+                      const Text(
+                        'The following uses the cell holding the entire Person, person():',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      CellWidget.builder((context) => Text('${person().fullName} is ${person().age} years old.')),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        child: const Text('Reset'),
+                        onPressed: () {
+                          person.value = const Person(
+                              firstName: '',
+                              lastName: '',
+                              age: 25
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        'The following uses the generated accessors:',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisSize: MainAxisSize.max,
+                        children: [
+                          const Text('person.firstName():'),
+                          const Spacer(),
+                          Text(person.firstName()),
+                        ],
+                      ),
+                      const SizedBox(height: 5),
+                      Row(
+                        mainAxisSize: MainAxisSize.max,
+                        children: [
+                          const Text('person.lastName():'),
+                          const Spacer(),
+                          Text(person.lastName()),
+                        ],
+                      ),
+                      const SizedBox(height: 5),
+                      Row(
+                        mainAxisSize: MainAxisSize.max,
+                        children: [
+                          const Text('person.age():'),
+                          const Spacer(),
+                          Text('${person.age()}'),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                  ),
+                ),
               ),
             ),
-            CellTextField(
-              content: cell(() => person.lastName),
-              decoration: const InputDecoration(
-                  label: Text('First Name')
-              ),
-            ),
-            numField(cell(() => person.age), 'Age'),
-            const SizedBox(height: 20),
-            CellWidget.builder((context) => Text('${person().fullName} is ${person().age} years old.'))
           ],
         ),
       ),
@@ -108,9 +182,10 @@ class MyHomePage extends CellWidget with CellInitializer {
 
         return CellTextField(
           content: content,
+          keyboardType: TextInputType.number,
           decoration: InputDecoration(
-              errorText: error()
-                  ? 'Not a valid number'
+              errorText: error() != null
+                  ? 'Not a valid integer'
                   : null
           ),
         );
