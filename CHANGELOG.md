@@ -1,3 +1,7 @@
+## 0.1.4
+
+* Improve README.
+
 ## 0.1.3
 
 * Fix issues with package analysis:

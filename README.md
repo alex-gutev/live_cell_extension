@@ -5,7 +5,7 @@ the class's properties.
 ## Features
 
 + Extends `ValueCell` and `MutableCell` with accessors for annotated class. 
-+ Options for whether to generated `MutableCell` accessors or not.
++ Options for whether to generate `MutableCell` accessors or not.
 + Allows you to write the following:
 
   ```dart
@@ -47,7 +47,7 @@ You'll also need to add this package and `build_runner` to the `dev_dependencies
 ```yaml
 dev_dependencies:
   build_runner:
-  live_cell_extension: ^0.1.3
+  live_cell_extension: ^0.1.4
   ...
 ```
 
@@ -92,9 +92,9 @@ provides the properties of the `Person` class:
 * `age`
 * `fullName`
 
-This allows you to access properties of `Person` objects held on the cell instance.
+This allows you to access properties of `Person` objects held in a cell.
 
-For example say you have a `ValueCell` holding a `Person`:
+For example, you have a `ValueCell` holding a `Person`:
 
 ```dart
 final ValueCell<Person> person;
