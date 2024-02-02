@@ -1,3 +1,7 @@
+## 0.1.1
+
+* Remove flutter dependency from pubspec.
+
 ## 0.1.0
 
 Initial Release:
