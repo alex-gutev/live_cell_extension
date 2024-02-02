@@ -37,7 +37,7 @@ To use this package you'll need to add the following to the `dependencies` of yo
 
 ```yaml
 dependencies:
-  live_cells: ^0.10.0
+  live_cells: ^0.10.1
   ...
 ```
 
@@ -47,7 +47,7 @@ You'll also need to add this package and `build_runner` to the `dev_dependencies
 ```yaml
 dev_dependencies:
   build_runner:
-  live_cell_extension: ^0.1.0
+  live_cell_extension: ^0.1.3
   ...
 ```
 

@@ -1,3 +1,10 @@
+## 0.1.3
+
+* Fix issues with package analysis:
+
+  * Remove dependencies on Flutter
+  * Replace live_cells dependency with live_cell_annotations
+
 ## 0.1.2
 
 * Fix issues with pubspec.
