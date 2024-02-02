@@ -1,6 +1,6 @@
 This package provides a code generator which generates extensions on `ValueCell` and `MutableCell`,
 from the [live_cells](https://pub.dev/packages/live_cells) package, that provide accessors for
-the class's properties.
+the properties of classes annotated with `CellExtension`.
 
 ## Features
 
@@ -47,7 +47,7 @@ You'll also need to add this package and `build_runner` to the `dev_dependencies
 ```yaml
 dev_dependencies:
   build_runner:
-  live_cell_extension: ^0.1.4
+  live_cell_extension: ^0.1.5
   ...
 ```
 
@@ -85,7 +85,7 @@ flutter pub run build_runner build
 ```
 
 This will generate an extension for `ValueCell<Person>`, called `PersonCellExtension` which
-provides the properties of the `Person` class:
+provides accessors for the properties of the `Person` class:
 
 * `firstName`
 * `lastName`
@@ -130,8 +130,8 @@ ValueCell.watch(() {
 // Prints: Person John Smith - 25
 person = Person(firstName: 'John', lastName: 'Smith', age: 25);
 
-// Prints: Person John Smith - 25
-person = Person(firstName: 'John', lastName: 'Smith', age: 25);
+// Prints: Person Jane Doe - 30
+person = Person(firstName: 'Jane', lastName: 'Doe', age: 30);
 ```
 
 **NOTE**:
@@ -187,7 +187,7 @@ Accessors for the following properties will be generated:
 Each generated accessor returns a `MutableCell` which when set, set's the value of the property.
 **NOTE**, this does not actually modify the instance held in the cell on which the property was
 accessed but creates a new instance, using the class's unnamed constructor, and assigns the cell's
-value to it. That's why, as you may have noticed, an accessor for `fullName` is not generated.
+value to it.
 
 Example:
 
@@ -215,7 +215,7 @@ MutableCell.batch(() {
    `mutable: true` allows the property values to be set via the `MutableCell`'s returned by the
    properties of the generated extension, however directly modifying a property on the instance will
    not notify the observers of the cell even if `mutable: true` is provided in the annotation.
-2. `MutableCell` accessors are generated only for which there is a field formal parameter in the
+2. `MutableCell` accessors are generated only for properties for which there is a field formal parameter in the
    unnamed constructor of the class. That's why an accessor for `fullName` is not generated.
 3. A `ValueCell` extension is still generated even when `mutable: true` is given. That's why in the
    above you can still access the `fullName` property directly on the cell and observe it, but you
