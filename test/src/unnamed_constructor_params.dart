@@ -1,4 +1,4 @@
-import 'package:live_cells/live_cell_annotations.dart';
+import 'package:live_cell_annotations/live_cell_annotations.dart';
 import 'package:source_gen_test/annotations.dart';
 
 // Test that the extensions are generated correctly if the constructor takes

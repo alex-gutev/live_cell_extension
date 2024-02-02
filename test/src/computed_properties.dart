@@ -1,4 +1,4 @@
-import 'package:live_cells/live_cell_annotations.dart';
+import 'package:live_cell_annotations/live_cell_annotations.dart';
 import 'package:source_gen_test/annotations.dart';
 
 // Test that an extension is generated for every public and final property of a class

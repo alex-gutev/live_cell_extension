@@ -6,13 +6,9 @@ issue_tracker: https://github.com/alex-gutev/live_cell_extension/issues
 
 environment:
   sdk: '>=3.2.5 <4.0.0'
-  flutter: ">=1.17.0"
 
 dependencies:
-  flutter:
-    sdk: flutter
-
-  live_cells: ^0.10.0
+  live_cell_annotations: ^0.1.0
 
   build: ^2.4.1
   source_gen: ^1.5.0

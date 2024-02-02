@@ -1,7 +1,7 @@
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/nullability_suffix.dart';
 import 'package:build/build.dart';
-import 'package:live_cells/live_cell_annotations.dart';
+import 'package:live_cell_annotations/live_cell_annotations.dart';
 import 'package:source_gen/source_gen.dart';
 
 import 'class_prop_visitor.dart';
