@@ -1,3 +1,4 @@
+import 'package:analyzer/dart/constant/value.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/nullability_suffix.dart';
 import 'package:analyzer/dart/element/type.dart';
@@ -55,38 +56,38 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
     final buffer = StringBuffer();
 
     for (final spec in specs) {
-      final specType = spec.type as InterfaceType;
-      final widgetClass = specType.typeArguments.single;
+      final widgetSpec = _WidgetClassSpec.parse(spec);
 
-      if (widgetClass is DynamicType ||
-          widgetClass is InvalidType) {
-        // Stop generating
-        return '';
-      }
-
-      buffer.writeln("// A [${widgetClass.getDisplayString(withNullability: false)}] "
+      buffer.writeln("// A [${widgetSpec.widgetClass.getDisplayString(withNullability: false)}] "
           "widget which takes the values of its properties from [ValueCell]'s.");
 
-      buffer.write(_generateCellWidget(widgetClass as InterfaceType));
+      buffer.write(_generateCellWidget(widgetSpec));
     }
 
     return buffer.toString();
   }
 
-  /// Generate a crapper for the widget class given by [widgetClass].
-  String _generateCellWidget(InterfaceType widgetClass) {
+  /// Generate a wrapper for a widget defined as per [spec]..
+  String _generateCellWidget(_WidgetClassSpec spec) {
+    final widgetClass = spec.widgetClass;
     final className = widgetClass.getDisplayString(withNullability: false);
-    final genName = 'Cell$className';
+    final genName = spec.genName ?? 'Cell$className';
     final buffer = StringBuffer();
 
     final props = <_WidgetProperty>[];
 
-    buffer.writeln('class $genName extends StatelessWidget {');
+    final constructor = widgetClass.constructors
+        .firstWhere((element) => element.name.isEmpty);
+    
+    buffer.write('class $genName extends StatelessWidget {');
 
-    for (final constructor in widgetClass.constructors) {
-      buffer.write(_generateConstructor(genName, constructor, props));
-    }
-
+    buffer.write(_generateConstructor(
+        className: genName, 
+        constructor: constructor, 
+        properties: props, 
+        spec: spec
+    ));
+    
     buffer.writeln();
     buffer.write(_generateProperties(props));
 
@@ -94,53 +95,60 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
     buffer.write(_generateBindMethod(genName, props));
 
     buffer.writeln();
-    buffer.write(_generateBuild(widgetClass, props));
+    buffer.write(_generateBuild(
+        spec: spec,
+        constructor: constructor,
+        properties: props
+    ));
 
     buffer.writeln('}');
 
     return buffer.toString();
   }
 
-  /// Generate a constructor for a widget wrapper.
+  /// Generate a constructor for a widget wrapper as per [spec].
   /// 
   /// A constructor for the wrapper class [className] is generated. Additionally
-  /// the list [props] is populated with the properties which should be added
+  /// the list [properties] is populated with the properties which should be added
   /// to the wrapper class. These are deduced from the parameters of
   /// [constructor].
-  String _generateConstructor(String className, ConstructorElement constructor, List<_WidgetProperty> props) {
+  String _generateConstructor({
+    required String className, 
+    required ConstructorElement constructor, 
+    required List<_WidgetProperty> properties,
+    required _WidgetClassSpec spec
+  }) {
     final buffer = StringBuffer();
 
-    if (constructor.name.isEmpty) {
-      buffer.writeln('const ${className}({');
+    buffer.writeln('const ${className}({');
+    buffer.writeln('super.key,');
 
-      buffer.writeln('super.key,');
-
-      for (final param in constructor.parameters) {
-        if (param.isSuperFormal) {
-          continue;
-        }
-
-        props.add(_WidgetProperty(
-            name: param.name,
-            type: param.type,
-            optional: !param.isRequired && !param.hasDefaultValue
-        ));
-
-        if (param.isRequired) {
-          buffer.write('required ');
-        }
-
-        buffer.write('this.${param.name}');
-
-        if (param.hasDefaultValue) {
-          buffer.write(' = ValueCell.value(${param.defaultValueCode}');
-        }
-
-        buffer.writeln(',');
+    for (final param in constructor.parameters) {
+      if (param.isSuperFormal || spec.excludeProperties.contains(param.name)) {
+        continue;
       }
 
-      buffer.writeln('});');
+      properties.add(_WidgetProperty(
+          name: param.name,
+          type: param.type,
+          optional: !param.isRequired && !param.hasDefaultValue,
+          mutable: spec.mutableProperties.contains(param.name)
+      ));
+
+      if (param.isRequired) {
+        buffer.write('required ');
+      }
+
+      buffer.write('this.${param.name}');
+
+      if (param.hasDefaultValue) {
+        buffer.write(' = const ValueCell.value(${param.defaultValueCode})');
+      }
+
+      buffer.writeln(',');
     }
+
+    buffer.writeln('});');
 
     return buffer.toString();
   }
@@ -150,50 +158,67 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
     final buffer = StringBuffer();
 
     for (final prop in properties) {
-      buffer.writeln('final ${_cellPropType(prop.type, prop.optional)} ${prop.name};');
+      buffer.writeln('final ${_cellPropType(prop, prop.optional)} ${prop.name};');
     }
 
     return buffer.toString();
   }
 
-  /// Return the cell type for a given property [type].
+  /// Return the cell type for a given property [prop].
   ///
   /// If [optional] is true a nullable cell type is returned, otherwise a non-
   /// null type is returned.
-  String _cellPropType(DartType type, bool optional) {
+  String _cellPropType(_WidgetProperty prop, bool optional) {
     final nullable = [NullabilitySuffix.question, NullabilitySuffix.star]
-        .contains(type.nullabilitySuffix);
+        .contains(prop.type.nullabilitySuffix);
 
-    final name = type.getDisplayString(withNullability: nullable);
+    final name = prop.type.getDisplayString(withNullability: nullable);
     final suffix = optional ? '?' : '';
 
-    return 'ValueCell<$name>$suffix';
+    final cell = prop.mutable ? 'MutableCell' : 'ValueCell';
+
+    return '$cell<$name>$suffix';
   }
 
-  /// Generate the build method for a wrapper class for widget [widgetClass].
-  String _generateBuild(InterfaceType widgetClass, List<_WidgetProperty> props) {
+  /// Generate the build method for a widget wrapper class as per [spec].
+  ///
+  /// The build method calls the widget [constructor] passing in the parameters
+  /// defined by [properties].
+  String _generateBuild({
+    required _WidgetClassSpec spec,
+    required ConstructorElement constructor,
+    required List<_WidgetProperty> properties
+  }) {
     final buffer = StringBuffer();
-    final constructor = _findConstructor(widgetClass);
-
+    final className = spec.widgetClass.getDisplayString(withNullability: false);
+    
     buffer.writeln('@override');
     buffer.writeln('Widget build(BuildContext \$context) {');
-    buffer.writeln('return CellWidget.builder((\$context) => ${widgetClass.name}(');
+    buffer.writeln('return CellWidget.builder((\$context) => $className(');
 
     for (final param in constructor.parameters) {
-      if (param.isSuperFormal) {
+      if (param.isSuperFormal ||
+          (spec.excludeProperties.contains(param.name) &&
+          !spec.propertyValues.containsKey(param.name))) {
         continue;
       }
+
       if (param.isNamed) {
         buffer.write('${param.name}: ');
       }
 
-      buffer.write(param.name);
-
-      if (param.isRequired || param.hasDefaultValue) {
-        buffer.write('()');
+      if (spec.excludeProperties.contains(param.name)) {
+        buffer.write(spec.propertyValues[param.name]);
       }
       else {
-        buffer.write('?.call()');
+        buffer.write(param.name);
+
+        if (param.isRequired || param.hasDefaultValue) {
+          buffer.write('()');
+        }
+        else {
+          buffer.write('?.call()');
+        }
       }
 
       buffer.writeln(',');
@@ -212,7 +237,7 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
     buffer.writeln('${genName} bind({');
 
     for (final prop in props) {
-      final type = _cellPropType(prop.type, true);
+      final type = _cellPropType(prop, true);
       buffer.writeln('$type ${prop.name},');
     }
 
@@ -226,16 +251,69 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
 
     return buffer.toString();
   }
+}
 
-  /// Find the default constructor of [widgetClass].
-  ConstructorElement _findConstructor(InterfaceType widgetClass) {
-    for (final constructor in widgetClass.constructors) {
-      if (constructor.name.isEmpty) {
-        return constructor;
-      }
+/// Specification for a widget wrapper class
+class _WidgetClassSpec {
+  /// The actual widget class for which the wrapper is generated
+  final InterfaceType widgetClass;
+
+  /// The name of the class to generate or null to use the default
+  final String? genName;
+
+  /// Set of properties which should be `MutableCell`'s
+  final Set<String> mutableProperties;
+
+  /// Set of properties to exclude from the generated wrapper class constructor
+  final Set<String> excludeProperties;
+
+  /// Map from property names to the corresponding code computing the property values
+  ///
+  /// If a property appears as a key this map, the code in the corresponding value
+  /// is inserted in the call to the widget constructor, otherwise the property
+  /// is forwarded to the constructor.
+  final Map<String, String> propertyValues;
+
+  _WidgetClassSpec({
+    required this.widgetClass,
+    required this.genName,
+    required this.mutableProperties,
+    required this.excludeProperties,
+    required this.propertyValues
+  });
+
+  /// Parse a [_WidgetClassSpect] from the generic object [spec].
+  factory _WidgetClassSpec.parse(DartObject spec) {
+    final specType = spec.type as InterfaceType;
+    final widgetClass = specType.typeArguments.single;
+
+    if (widgetClass is DynamicType ||
+        widgetClass is InvalidType) {
+      throw InvalidGenerationSource('WidgetSpec type parameter must be a class');
     }
 
-    throw InvalidGenerationSource('Widget class does not have a default constructor.');
+    final genName = spec.getField('as')?.toSymbolValue();
+    final mutableProps = spec.getField('mutableProperties')
+        ?.toListValue()
+        ?.map((e) => e.toSymbolValue()!)
+        .toSet();
+
+    final excludedProps = spec.getField('excludeProperties')
+        ?.toListValue()
+        ?.map((e) => e.toSymbolValue()!)
+        .toSet();
+
+    final propertyValues = spec.getField('propertyValues')
+        ?.toMapValue()
+        ?.map((key, value) => MapEntry(key!.toSymbolValue()!, value!.toStringValue()!));
+
+    return _WidgetClassSpec(
+        widgetClass: widgetClass as InterfaceType,
+        genName: genName,
+        mutableProperties: mutableProps ?? {}, 
+        excludeProperties: excludedProps ?? {},
+        propertyValues: propertyValues ?? {}
+    );
   }
 }
 
@@ -250,9 +328,13 @@ class _WidgetProperty {
   /// Is this property optional or a required property?
   final bool optional;
 
+  /// Is this a mutable property?
+  final bool mutable;
+
   _WidgetProperty({
     required this.name,
     required this.type,
-    required this.optional
+    required this.optional,
+    required this.mutable
   });
 }
