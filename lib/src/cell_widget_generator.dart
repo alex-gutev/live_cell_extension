@@ -127,6 +127,22 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
     buffer.writeln('const ${className}({');
     buffer.writeln('super.key,');
 
+    for (final prop in spec.addProperties) {
+      properties.add(prop);
+
+      if (!prop.optional && prop.defaultValue == null) {
+        buffer.write('required ');
+      }
+
+      buffer.write('this.${prop.name}');
+
+      if (prop.defaultValue != null) {
+        buffer.write(' = const ValueCell.value(${prop.defaultValue})');
+      }
+
+      buffer.writeln(',');
+    }
+
     for (final param in constructor.parameters) {
       if (param.isSuperFormal || spec.excludeProperties.contains(param.name)) {
         continue;
@@ -289,6 +305,9 @@ class _WidgetClassSpec {
   /// the corresponding value.
   final Map<String, String> propertyTypes;
 
+  /// Additional properties to add to generated class
+  final List<_WidgetProperty> addProperties;
+
   _WidgetClassSpec({
     required this.widgetClass,
     required this.genName,
@@ -296,7 +315,8 @@ class _WidgetClassSpec {
     required this.mutableProperties,
     required this.excludeProperties,
     required this.propertyValues,
-    required this.propertyTypes
+    required this.propertyTypes,
+    required this.addProperties
   });
 
   /// Parse a [_WidgetClassSpect] from the generic object [spec].
@@ -334,6 +354,10 @@ class _WidgetClassSpec {
         ?.toMapValue()
         ?.map((key, value) => MapEntry(key!.toSymbolValue()!, value!.toStringValue()!));
 
+    final addProperties = spec.getField('addProperties')
+        ?.toListValue()
+        ?.map((e) => _WidgetProperty.parse(e)).toList();
+
     return _WidgetClassSpec(
         widgetClass: widgetClass as InterfaceType,
         genName: genName,
@@ -341,7 +365,8 @@ class _WidgetClassSpec {
         mutableProperties: mutableProps ?? {}, 
         excludeProperties: excludedProps ?? {},
         propertyValues: propertyValues ?? {},
-        propertyTypes: propertyTypes ?? {}
+        propertyTypes: propertyTypes ?? {},
+        addProperties: addProperties ?? []
     );
   }
 }
@@ -360,10 +385,37 @@ class _WidgetProperty {
   /// Is this a mutable property?
   final bool mutable;
 
+  /// Default value to initialize property to.
+  ///
+  /// If null the property does not have a default value.
+  final String? defaultValue;
+
   _WidgetProperty({
     required this.name,
     required this.type,
     required this.optional,
-    required this.mutable
+    required this.mutable,
+    this.defaultValue
   });
+
+  /// Parse a _WidgetProperty from [spec] which encodes a [WidgetPropertySpec].
+  factory _WidgetProperty.parse(DartObject spec) {
+    final specType = spec.type as InterfaceType;
+
+    final type = specType.typeArguments.single;
+    final name = spec.getField('name')!.toSymbolValue()!;
+    final defaultValue = spec.getField('defaultValue')?.toStringValue();
+    final optional = spec.getField('optional')!.toBoolValue()!;
+    final mutable = spec.getField('mutable')!.toBoolValue()!;
+
+    return _WidgetProperty(
+        name: name,
+        type: type.getDisplayString(
+          withNullability: [NullabilitySuffix.star, NullabilitySuffix.question].contains(type.nullabilitySuffix)
+        ),
+        optional: optional,
+        mutable: mutable,
+        defaultValue: defaultValue
+    );
+  }
 }
