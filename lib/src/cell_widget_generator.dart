@@ -78,8 +78,12 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
 
     final constructor = widgetClass.constructors
         .firstWhere((element) => element.name.isEmpty);
-    
-    buffer.write('class $genName extends StatelessWidget {');
+
+    final typeArgs = spec.typeArguments.isNotEmpty
+        ? '<${spec.typeArguments.join('')}>'
+        : '';
+
+    buffer.write('class $genName$typeArgs extends StatelessWidget {');
 
     buffer.write(_generateConstructor(
         className: genName, 
@@ -128,10 +132,15 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
         continue;
       }
 
+      final optional = !param.isRequired && !param.hasDefaultValue;
+      final nullable = [NullabilitySuffix.question, NullabilitySuffix.star]
+          .contains(param.type.nullabilitySuffix);
+
       properties.add(_WidgetProperty(
           name: param.name,
-          type: param.type,
-          optional: !param.isRequired && !param.hasDefaultValue,
+          type: spec.propertyTypes[param.name]
+              ?? param.type.getDisplayString(withNullability: nullable),
+          optional: optional,
           mutable: spec.mutableProperties.contains(param.name)
       ));
 
@@ -169,10 +178,7 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
   /// If [optional] is true a nullable cell type is returned, otherwise a non-
   /// null type is returned.
   String _cellPropType(_WidgetProperty prop, bool optional) {
-    final nullable = [NullabilitySuffix.question, NullabilitySuffix.star]
-        .contains(prop.type.nullabilitySuffix);
-
-    final name = prop.type.getDisplayString(withNullability: nullable);
+    final name = prop.type;
     final suffix = optional ? '?' : '';
 
     final cell = prop.mutable ? 'MutableCell' : 'ValueCell';
@@ -261,6 +267,9 @@ class _WidgetClassSpec {
   /// The name of the class to generate or null to use the default
   final String? genName;
 
+  /// Type arguments to add to generated class
+  final List<String> typeArguments;
+
   /// Set of properties which should be `MutableCell`'s
   final Set<String> mutableProperties;
 
@@ -274,12 +283,20 @@ class _WidgetClassSpec {
   /// is forwarded to the constructor.
   final Map<String, String> propertyValues;
 
+  /// Map from property names to types
+  ///
+  /// If a property is a key in this map, its type is replaced with the type in
+  /// the corresponding value.
+  final Map<String, String> propertyTypes;
+
   _WidgetClassSpec({
     required this.widgetClass,
     required this.genName,
+    required this.typeArguments,
     required this.mutableProperties,
     required this.excludeProperties,
-    required this.propertyValues
+    required this.propertyValues,
+    required this.propertyTypes
   });
 
   /// Parse a [_WidgetClassSpect] from the generic object [spec].
@@ -293,6 +310,12 @@ class _WidgetClassSpec {
     }
 
     final genName = spec.getField('as')?.toSymbolValue();
+
+    final typeArgs = spec.getField('typeArguments')
+        ?.toListValue()
+        ?.map((e) => e.toStringValue()!)
+        .toList();
+
     final mutableProps = spec.getField('mutableProperties')
         ?.toListValue()
         ?.map((e) => e.toSymbolValue()!)
@@ -307,12 +330,18 @@ class _WidgetClassSpec {
         ?.toMapValue()
         ?.map((key, value) => MapEntry(key!.toSymbolValue()!, value!.toStringValue()!));
 
+    final propertyTypes = spec.getField('propertyTypes')
+        ?.toMapValue()
+        ?.map((key, value) => MapEntry(key!.toSymbolValue()!, value!.toStringValue()!));
+
     return _WidgetClassSpec(
         widgetClass: widgetClass as InterfaceType,
         genName: genName,
+        typeArguments: typeArgs ?? [],
         mutableProperties: mutableProps ?? {}, 
         excludeProperties: excludedProps ?? {},
-        propertyValues: propertyValues ?? {}
+        propertyValues: propertyValues ?? {},
+        propertyTypes: propertyTypes ?? {}
     );
   }
 }
@@ -323,7 +352,7 @@ class _WidgetProperty {
   final String name;
 
   /// Property value type
-  final DartType type;
+  final String type;
 
   /// Is this property optional or a required property?
   final bool optional;
