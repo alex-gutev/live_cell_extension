@@ -224,6 +224,21 @@ MutableCell.batch(() {
    `ValueCell` or `MutableCell` provided by the `live_cells` package. 
    Accessors are not generated for such properties.
 
+## Options
+
+The `CellExtension` annotation also takes the following options:
+
+* `name`
+
+  The name of the `ValueCell` extension to generate. If this is `null`, the name of the generated
+  extension is the name of the annotated class followed by `CellExtension`.
+
+* `mutableName`
+
+  The name of the `MutableCell` extension to generate, if `mutable` is true. If this is `null`, the 
+  name of the generated extension is the name of the annotated class followed by 
+  `MutableCellExtension`.
+
 ## Additional information
 
 Check the example in the `example/` directory for a complete example from setting up the project's
