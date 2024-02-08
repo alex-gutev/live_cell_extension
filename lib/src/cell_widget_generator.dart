@@ -229,8 +229,8 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
     final className = spec.widgetClass.getDisplayString(withNullability: false);
     
     buffer.writeln('@override');
-    buffer.writeln('Widget build(BuildContext \$context) {');
-    buffer.writeln('return CellWidget.builder((\$context) => $className(');
+    buffer.writeln('Widget build(BuildContext context) {');
+    buffer.writeln('return CellWidget.builder((_) => $className(');
 
     for (final param in constructor.parameters) {
       if ((spec.excludeProperties.contains(param.name) &&
