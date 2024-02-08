@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:analyzer/dart/constant/value.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/nullability_suffix.dart';
@@ -57,10 +60,6 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
 
     for (final spec in specs) {
       final widgetSpec = _WidgetClassSpec.parse(spec);
-
-      buffer.writeln("// A [${widgetSpec.widgetClass.getDisplayString(withNullability: false)}] "
-          "widget which takes the values of its properties from [ValueCell]'s.");
-
       buffer.write(_generateCellWidget(widgetSpec));
     }
 
@@ -83,7 +82,11 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
         ? '<${spec.typeArguments.join('')}>'
         : '';
 
-    buffer.write('class $genName$typeArgs extends StatelessWidget {');
+    if (spec.documentation != null) {
+      buffer.writeln(_makeDocComment(spec.documentation!));
+    }
+
+    buffer.writeln('class $genName$typeArgs extends StatelessWidget {');
 
     buffer.write(_generateConstructor(
         className: genName, 
@@ -183,6 +186,10 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
     final buffer = StringBuffer();
 
     for (final prop in properties) {
+      if (prop.documentation != null) {
+        buffer.writeln(_makeDocComment(prop.documentation!));
+      }
+
       buffer.writeln('final ${_cellPropType(prop, prop.optional)} ${prop.name};');
     }
 
@@ -273,6 +280,19 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
 
     return buffer.toString();
   }
+
+  /// Convert a multi-line string into a documentation comment
+  String _makeDocComment(String documentation) {
+    final splitter = LineSplitter();
+    final lines = splitter.convert(documentation);
+
+    if (lines.lastOrNull?.isEmpty ?? false) {
+      lines.removeLast();
+    }
+
+    return lines.map((e) => '/// $e')
+        .join(Platform.lineTerminator);
+  }
 }
 
 /// Specification for a widget wrapper class
@@ -308,6 +328,9 @@ class _WidgetClassSpec {
   /// Additional properties to add to generated class
   final List<_WidgetProperty> addProperties;
 
+  /// Documentation comment for the generated class
+  final String? documentation;
+
   _WidgetClassSpec({
     required this.widgetClass,
     required this.genName,
@@ -316,7 +339,8 @@ class _WidgetClassSpec {
     required this.excludeProperties,
     required this.propertyValues,
     required this.propertyTypes,
-    required this.addProperties
+    required this.addProperties,
+    required this.documentation
   });
 
   /// Parse a [_WidgetClassSpect] from the generic object [spec].
@@ -358,6 +382,8 @@ class _WidgetClassSpec {
         ?.toListValue()
         ?.map((e) => _WidgetProperty.parse(e)).toList();
 
+    final documentation = spec.getField('documentation')?.toStringValue();
+
     return _WidgetClassSpec(
         widgetClass: widgetClass as InterfaceType,
         genName: genName,
@@ -366,7 +392,8 @@ class _WidgetClassSpec {
         excludeProperties: excludedProps ?? {},
         propertyValues: propertyValues ?? {},
         propertyTypes: propertyTypes ?? {},
-        addProperties: addProperties ?? []
+        addProperties: addProperties ?? [],
+        documentation: documentation
     );
   }
 }
@@ -390,12 +417,16 @@ class _WidgetProperty {
   /// If null the property does not have a default value.
   final String? defaultValue;
 
+  /// Documentation for this property
+  final String? documentation;
+
   _WidgetProperty({
     required this.name,
     required this.type,
     required this.optional,
     required this.mutable,
-    this.defaultValue
+    this.defaultValue,
+    this.documentation
   });
 
   /// Parse a _WidgetProperty from [spec] which encodes a [WidgetPropertySpec].
@@ -408,6 +439,8 @@ class _WidgetProperty {
     final optional = spec.getField('optional')!.toBoolValue()!;
     final mutable = spec.getField('mutable')!.toBoolValue()!;
 
+    final documentation = spec.getField('documentation')?.toStringValue();
+
     return _WidgetProperty(
         name: name,
         type: type.getDisplayString(
@@ -415,7 +448,8 @@ class _WidgetProperty {
         ),
         optional: optional,
         mutable: mutable,
-        defaultValue: defaultValue
+        defaultValue: defaultValue,
+        documentation: documentation
     );
   }
 }
