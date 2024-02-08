@@ -147,7 +147,8 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
     }
 
     for (final param in constructor.parameters) {
-      if (param.isSuperFormal || spec.excludeProperties.contains(param.name)) {
+      if (spec.excludeProperties.contains(param.name) ||
+          (param.isSuperFormal && !spec.includeSuperProperties.contains(param.name))) {
         continue;
       }
 
@@ -226,9 +227,9 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
     buffer.writeln('return CellWidget.builder((\$context) => $className(');
 
     for (final param in constructor.parameters) {
-      if (param.isSuperFormal ||
-          (spec.excludeProperties.contains(param.name) &&
-          !spec.propertyValues.containsKey(param.name))) {
+      if ((spec.excludeProperties.contains(param.name) &&
+          !spec.propertyValues.containsKey(param.name)) ||
+          (param.isSuperFormal && !spec.includeSuperProperties.contains(param.name))) {
         continue;
       }
 
@@ -328,6 +329,9 @@ class _WidgetClassSpec {
   /// Additional properties to add to generated class
   final List<_WidgetProperty> addProperties;
 
+  /// Properties of the super class to include in the generated wrapper.
+  final Set<String> includeSuperProperties;
+
   /// Documentation comment for the generated class
   final String? documentation;
 
@@ -340,6 +344,7 @@ class _WidgetClassSpec {
     required this.propertyValues,
     required this.propertyTypes,
     required this.addProperties,
+    required this.includeSuperProperties,
     required this.documentation
   });
 
@@ -382,6 +387,11 @@ class _WidgetClassSpec {
         ?.toListValue()
         ?.map((e) => _WidgetProperty.parse(e)).toList();
 
+    final superProps = spec.getField('includeSuperProperties')
+        ?.toListValue()
+        ?.map((e) => e.toSymbolValue()!)
+        .toSet();
+
     final documentation = spec.getField('documentation')?.toStringValue();
 
     return _WidgetClassSpec(
@@ -393,6 +403,7 @@ class _WidgetClassSpec {
         propertyValues: propertyValues ?? {},
         propertyTypes: propertyTypes ?? {},
         addProperties: addProperties ?? [],
+        includeSuperProperties: superProps ?? {},
         documentation: documentation
     );
   }
