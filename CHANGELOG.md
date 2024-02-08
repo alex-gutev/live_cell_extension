@@ -1,3 +1,7 @@
+## 0.2.0
+
+* Add support for `name` and `mutableName` properties of `CellExtension` annotation.
+
 ## 0.1.5
 
 * Fix typos in README.
