@@ -8,7 +8,7 @@ environment:
   sdk: '>=3.2.5 <4.0.0'
 
 dependencies:
-  live_cell_annotations: ^0.1.0
+  live_cell_annotations: ^0.2.0
 
   build: ^2.4.1
   source_gen: ^1.5.0
