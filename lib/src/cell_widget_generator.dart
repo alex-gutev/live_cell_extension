@@ -152,7 +152,10 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
         continue;
       }
 
-      final optional = !param.isRequired && !param.hasDefaultValue;
+      final hasDefault = param.hasDefaultValue ||
+          spec.propertyDefaultValues.containsKey(param.name);
+
+      final optional = !param.isRequired && !hasDefault;
       final nullable = [NullabilitySuffix.question, NullabilitySuffix.star]
           .contains(param.type.nullabilitySuffix);
 
@@ -170,8 +173,11 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
 
       buffer.write('this.${param.name}');
 
-      if (param.hasDefaultValue) {
-        buffer.write(' = const ValueCell.value(${param.defaultValueCode})');
+      if (hasDefault) {
+        final defaultValue = spec.propertyDefaultValues[param.name]
+            ?? param.defaultValueCode;
+
+        buffer.write(' = const ValueCell.value($defaultValue)');
       }
 
       buffer.writeln(',');
@@ -320,6 +326,12 @@ class _WidgetClassSpec {
   /// is forwarded to the constructor.
   final Map<String, String> propertyValues;
 
+  /// Map from property names to the corresponding code computing the property default values
+  ///
+  /// If a property appears as a key this map, the code in the corresponding value
+  /// is used to compute the default value in the constructor.
+  final Map<String, String> propertyDefaultValues;
+
   /// Map from property names to types
   ///
   /// If a property is a key in this map, its type is replaced with the type in
@@ -342,6 +354,7 @@ class _WidgetClassSpec {
     required this.mutableProperties,
     required this.excludeProperties,
     required this.propertyValues,
+    required this.propertyDefaultValues,
     required this.propertyTypes,
     required this.addProperties,
     required this.includeSuperProperties,
@@ -379,6 +392,10 @@ class _WidgetClassSpec {
         ?.toMapValue()
         ?.map((key, value) => MapEntry(key!.toSymbolValue()!, value!.toStringValue()!));
 
+    final propertyDefaultValues = spec.getField('propertyDefaultValues')
+        ?.toMapValue()
+        ?.map((key, value) => MapEntry(key!.toSymbolValue()!, value!.toStringValue()!));
+
     final propertyTypes = spec.getField('propertyTypes')
         ?.toMapValue()
         ?.map((key, value) => MapEntry(key!.toSymbolValue()!, value!.toStringValue()!));
@@ -401,6 +418,7 @@ class _WidgetClassSpec {
         mutableProperties: mutableProps ?? {}, 
         excludeProperties: excludedProps ?? {},
         propertyValues: propertyValues ?? {},
+        propertyDefaultValues: propertyDefaultValues ?? {},
         propertyTypes: propertyTypes ?? {},
         addProperties: addProperties ?? [],
         includeSuperProperties: superProps ?? {},
