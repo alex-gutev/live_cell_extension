@@ -1,3 +1,4 @@
+import 'package:analyzer/dart/constant/value.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/nullability_suffix.dart';
 import 'package:build/build.dart';
@@ -79,10 +80,16 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
       );
     }
 
-    final buffer = StringBuffer();
-    buffer.write(_generateCellExtension(element.name, fields));
+    final spec = _CellExtensionSpec.parse(annotation.objectValue);
 
-    if (annotation.read('mutable').boolValue) {
+    final buffer = StringBuffer();
+    buffer.write(_generateCellExtension(
+        spec: spec,
+        className: element.name,
+        fields: fields
+    ));
+
+    if (spec.mutable) {
       final mutableFields = _filterReservedFields(
           visitor.mutableFields,
           allReservedFieldNames,
@@ -99,6 +106,7 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
       }
 
       buffer.write(_generateMutableCellExtension(
+          spec: spec,
           className: element.name,
           fields: mutableFields,
           constructor: visitor.constructor!
@@ -109,13 +117,18 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
   }
 
   /// Generate a [ValueCell] extension providing accessors for [fields].
-  String _generateCellExtension(String className, List<FieldElement> fields) {
+  String _generateCellExtension({
+    required _CellExtensionSpec spec,
+    required String className,
+    required List<FieldElement> fields
+  }) {
     final buffer = StringBuffer();
 
+    final extensionName = spec.name ?? '${className}CellExtension';
     final keyClass = '_\$ValueCellPropKey$className';
 
     buffer.writeln('// Extends ValueCell with accessors for $className properties');
-    buffer.writeln('extension ${className}CellExtension on ValueCell<$className> {');
+    buffer.writeln('extension $extensionName on ValueCell<$className> {');
 
     for (final field in fields) {
       buffer.writeln(_generateCellAccessor(field, keyClass));
@@ -140,16 +153,18 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
 
   /// Generate a [MutableCell] extension providing accessors for [fields].
   String _generateMutableCellExtension({
+    required _CellExtensionSpec spec,
     required String className,
     required List<FieldElement> fields,
     required ConstructorElement constructor,
   }) {
     final buffer = StringBuffer();
 
+    final extensionName = spec.mutableName ?? '${className}MutableCellExtension';
     final keyClass = '_\$MutableCellPropKey$className';
     
     buffer.writeln('// Extends MutableCell with accessors for $className properties');
-    buffer.writeln('extension ${className}MutableCellExtension on MutableCell<$className> {');
+    buffer.writeln('extension $extensionName on MutableCell<$className> {');
 
     buffer.write(_generateCopyWithMethod(
         className: className,
@@ -274,4 +289,29 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
 
     return filtered;
   }
+}
+
+/// Decoded cell extension annotation
+class _CellExtensionSpec {
+  /// Name of the ValueCell extension to generate
+  final String? name;
+
+  /// Name of the MutableCell extension to generate
+  final String? mutableName;
+
+  /// Should an extension on MutableCell be generated
+  final bool mutable;
+
+  const _CellExtensionSpec({
+    required this.name,
+    required this.mutableName,
+    required this.mutable
+  });
+
+  /// Parse the encoded annotation from [object].
+  factory _CellExtensionSpec.parse(DartObject object) => _CellExtensionSpec(
+      name: object.getField('name')?.toSymbolValue(),
+      mutableName: object.getField('mutableName')?.toSymbolValue(),
+      mutable: object.getField('mutable')?.toBoolValue() ?? false
+  );
 }
