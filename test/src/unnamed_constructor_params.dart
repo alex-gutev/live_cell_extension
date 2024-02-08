@@ -34,15 +34,15 @@ class _$ValueCellPropKeyPerson {
 // Extends MutableCell with accessors for Person properties
 extension PersonMutableCellExtension on MutableCell<Person> {
   static Person _copyWith(
-    Person instance, {
+    Person _instance, {
     String? firstName,
     String? lastName,
     int? age,
   }) {
     return Person(
-      firstName ?? instance.firstName,
-      lastName ?? instance.lastName,
-      age: age ?? instance.age,
+      firstName ?? _instance.firstName,
+      lastName ?? _instance.lastName,
+      age: age ?? _instance.age,
     );
   }
 
