@@ -51,4 +51,12 @@ Future<void> main() async {
     ),
     CellExtensionGenerator(),
   );
+
+  testAnnotatedElements(
+    await initializeLibraryReaderForDirectory(
+        'test/src',
+        'name_options.dart'
+    ),
+    CellExtensionGenerator(),
+  );
 }
