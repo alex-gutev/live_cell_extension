@@ -1,6 +1,7 @@
 library live_cell_extension;
 
 import 'package:build/build.dart';
+import 'package:live_cell_extension/src/cell_value_extension_generator.dart';
 import 'package:source_gen/source_gen.dart';
 
 import 'src/cell_extension_generator.dart';
@@ -17,5 +18,12 @@ Builder generateCellWidgets(BuilderOptions options) {
   return SharedPartBuilder(
     [CellWidgetGenerator()],
     'cell_widget_generator'
+  );
+}
+
+Builder generateValueExtensions(BuilderOptions options) {
+  return SharedPartBuilder(
+    [CellValueExtensionGenerator()],
+    'cell_value_extension_generator'
   );
 }
