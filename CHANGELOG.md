@@ -1,3 +1,9 @@
+## 0.3.0
+
+No new user facing features:
+
+* Add generators for `GenerateCellWidgets` and `GenerateValueExtensions` annotations.
+
 ## 0.2.0
 
 * Add support for `name` and `mutableName` properties of `CellExtension` annotation.
