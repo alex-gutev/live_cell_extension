@@ -99,13 +99,13 @@ class MyHomePage extends CellWidget with CellInitializer {
                         content: person.firstName,
                         decoration: const InputDecoration(
                           label: Text('First Name')
-                        ),
+                        ).cell,
                       ),
                       CellTextField(
                         content: person.lastName,
                         decoration: const InputDecoration(
                             label: Text('Last Name')
-                        ),
+                        ).cell,
                       ),
                       numField(person.age, 'Age'),
                       const SizedBox(height: 20),
@@ -175,19 +175,19 @@ class MyHomePage extends CellWidget with CellInitializer {
   }
 
   static Widget numField(MutableCell<int> cell, String label) =>
-      CellWidget.builder((context) {
-        final maybe = context.cell(() => cell.maybe());
-        final content = context.cell(() => maybe.mutableString());
-        final error = context.cell(() => maybe.error);
+      StaticWidget.builder((context) {
+        final maybe = cell.maybe();
+        final content = maybe.mutableString();
+        final error = maybe.error;
 
         return CellTextField(
           content: content,
-          keyboardType: TextInputType.number,
-          decoration: InputDecoration(
+          keyboardType: TextInputType.number.cell,
+          decoration: ValueCell.computed(() => InputDecoration(
               errorText: error() != null
                   ? 'Not a valid integer'
                   : null
-          ),
+          )),
         );
       });
 }
