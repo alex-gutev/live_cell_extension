@@ -243,7 +243,7 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
         buffer.write('${param.name}: ');
       }
 
-      if (spec.excludeProperties.contains(param.name)) {
+      if (spec.propertyValues.containsKey(param.name)) {
         buffer.write(spec.propertyValues[param.name]);
       }
       else {
