@@ -147,8 +147,8 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
 
     return 'ValueCell<$type> get $name => apply('
         '(value) => value.$name,'
-        "key: $keyClass(this, '$name')"
-        ');';
+        'key: $keyClass(this, #$name)'
+        ').store(changesOnly: true);';
   }
 
   /// Generate a [MutableCell] extension providing accessors for [fields].
@@ -188,11 +188,11 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
     final name = field.name;
     final type = field.type.toString();
 
-    return 'MutableCell<$type> get $name => MutableCellView('
-        'argument: this,'
-        "key: $keyClass(this, '$name'),"
-        'compute: () => value.$name,'
-        'reverse: (p) { value = _copyWith(value, $name: p); }'
+    return 'MutableCell<$type> get $name => mutableApply('
+        '(value) => value.$name,'
+        '(p) { value = _copyWith(value, $name: p); },'
+        'key: $keyClass(this, #$name),'
+        'changesOnly: true'
         ');';
   }
 
@@ -248,7 +248,7 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
 
     buffer.writeln('class $name {');
     buffer.writeln('final ValueCell _cell;');
-    buffer.writeln('final String _prop;');
+    buffer.writeln('final Symbol _prop;');
     buffer.writeln('$name(this._cell, this._prop);');
 
     buffer.writeln('@override');
