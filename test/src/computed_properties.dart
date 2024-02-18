@@ -8,18 +8,22 @@ import 'package:source_gen_test/annotations.dart';
 // Extends ValueCell with accessors for Person properties
 extension PersonCellExtension on ValueCell<Person> {
   ValueCell<String> get firstName => apply((value) => value.firstName,
-      key: _$ValueCellPropKeyPerson(this, 'firstName'));
+          key: _$ValueCellPropKeyPerson(this, #firstName))
+      .store(changesOnly: true);
   ValueCell<String> get lastName => apply((value) => value.lastName,
-      key: _$ValueCellPropKeyPerson(this, 'lastName'));
+          key: _$ValueCellPropKeyPerson(this, #lastName))
+      .store(changesOnly: true);
   ValueCell<int> get age =>
-      apply((value) => value.age, key: _$ValueCellPropKeyPerson(this, 'age'));
+      apply((value) => value.age, key: _$ValueCellPropKeyPerson(this, #age))
+          .store(changesOnly: true);
   ValueCell<String> get fullName => apply((value) => value.fullName,
-      key: _$ValueCellPropKeyPerson(this, 'fullName'));
+          key: _$ValueCellPropKeyPerson(this, #fullName))
+      .store(changesOnly: true);
 }
 
 class _$ValueCellPropKeyPerson {
   final ValueCell _cell;
-  final String _prop;
+  final Symbol _prop;
   _$ValueCellPropKeyPerson(this._cell, this._prop);
   @override
   bool operator ==(other) =>

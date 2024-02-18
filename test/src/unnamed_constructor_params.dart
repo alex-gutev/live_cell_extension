@@ -9,18 +9,22 @@ import 'package:source_gen_test/annotations.dart';
 // Extends ValueCell with accessors for Person properties
 extension PersonCellExtension on ValueCell<Person> {
   ValueCell<String> get firstName => apply((value) => value.firstName,
-      key: _$ValueCellPropKeyPerson(this, 'firstName'));
+          key: _$ValueCellPropKeyPerson(this, #firstName))
+      .store(changesOnly: true);
   ValueCell<String> get lastName => apply((value) => value.lastName,
-      key: _$ValueCellPropKeyPerson(this, 'lastName'));
+          key: _$ValueCellPropKeyPerson(this, #lastName))
+      .store(changesOnly: true);
   ValueCell<int> get age =>
-      apply((value) => value.age, key: _$ValueCellPropKeyPerson(this, 'age'));
+      apply((value) => value.age, key: _$ValueCellPropKeyPerson(this, #age))
+          .store(changesOnly: true);
   ValueCell<String> get fullName => apply((value) => value.fullName,
-      key: _$ValueCellPropKeyPerson(this, 'fullName'));
+          key: _$ValueCellPropKeyPerson(this, #fullName))
+      .store(changesOnly: true);
 }
 
 class _$ValueCellPropKeyPerson {
   final ValueCell _cell;
-  final String _prop;
+  final Symbol _prop;
   _$ValueCellPropKeyPerson(this._cell, this._prop);
   @override
   bool operator ==(other) =>
@@ -46,32 +50,22 @@ extension PersonMutableCellExtension on MutableCell<Person> {
     );
   }
 
-  MutableCell<String> get firstName => MutableCellView(
-      argument: this,
-      key: _$MutableCellPropKeyPerson(this, 'firstName'),
-      compute: () => value.firstName,
-      reverse: (p) {
+  MutableCell<String> get firstName =>
+      mutableApply((value) => value.firstName, (p) {
         value = _copyWith(value, firstName: p);
-      });
-  MutableCell<String> get lastName => MutableCellView(
-      argument: this,
-      key: _$MutableCellPropKeyPerson(this, 'lastName'),
-      compute: () => value.lastName,
-      reverse: (p) {
+      }, key: _$MutableCellPropKeyPerson(this, #firstName), changesOnly: true);
+  MutableCell<String> get lastName =>
+      mutableApply((value) => value.lastName, (p) {
         value = _copyWith(value, lastName: p);
-      });
-  MutableCell<int> get age => MutableCellView(
-      argument: this,
-      key: _$MutableCellPropKeyPerson(this, 'age'),
-      compute: () => value.age,
-      reverse: (p) {
+      }, key: _$MutableCellPropKeyPerson(this, #lastName), changesOnly: true);
+  MutableCell<int> get age => mutableApply((value) => value.age, (p) {
         value = _copyWith(value, age: p);
-      });
+      }, key: _$MutableCellPropKeyPerson(this, #age), changesOnly: true);
 }
 
 class _$MutableCellPropKeyPerson {
   final ValueCell _cell;
-  final String _prop;
+  final Symbol _prop;
   _$MutableCellPropKeyPerson(this._cell, this._prop);
   @override
   bool operator ==(other) =>
