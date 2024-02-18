@@ -1,3 +1,10 @@
+## 0.4.0
+
+* Add `changesOnly` to the generated cell accessors.
+
+  This ensures that when only a single property is modified, only the observers of the cell,
+  which accesses that property, are notified.
+
 ## 0.3.0
 
 No new user facing features:
