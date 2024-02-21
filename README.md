@@ -37,7 +37,7 @@ To use this package you'll need to add the following to the `dependencies` of yo
 
 ```yaml
 dependencies:
-  live_cells_core: ^0.12.1
+  live_cells_core: ^0.13.0
   ...
 ```
 

@@ -1,3 +1,7 @@
+## 0.4.1
+
+* Increase `live_cells_core` dependency version to 0.13.0
+
 ## 0.4.0
 
 * Add `changesOnly` to the generated cell accessors.
