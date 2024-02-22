@@ -9,6 +9,11 @@ import 'class_prop_visitor.dart';
 
 /// Generates extensions on [ValueCell] for classes annotated with [CellExtension].
 class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
+  /// Identifiers reserved for [Object] properties.
+  static const reservedObjectFieldNames = {
+    'hashCode'
+  };
+
   /// Set of identifiers which are reserved for ValueCell properties
   static const reservedFieldNames = {
     // ValueCell
@@ -278,9 +283,12 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
     List<FieldElement> filtered = [];
 
     for (final field in fields) {
-      if (reservedFieldNames.contains(field.name)) {
+      if (reservedObjectFieldNames.contains(field.name)) {
+        continue;
+      }
+      else if (reserved.contains(field.name)) {
         log.info('${field.name} is reserved for $extType properties. '
-            'Accessor not be generated.');
+            'Accessor not generated.');
       }
       else {
         filtered.add(field);

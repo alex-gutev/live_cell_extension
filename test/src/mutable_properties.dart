@@ -78,10 +78,10 @@ class _$MutableCellPropKeyPerson {
 }
 ''',
     expectedLogItems: [
-      'value is reserved for ValueCell properties. Accessor not be generated.',
-      'previous is reserved for ValueCell properties. Accessor not be generated.',
-      'value is reserved for MutableCell properties. Accessor not be generated.',
-      'previous is reserved for MutableCell properties. Accessor not be generated.'
+      'value is reserved for ValueCell properties. Accessor not generated.',
+      'previous is reserved for ValueCell properties. Accessor not generated.',
+      'value is reserved for MutableCell properties. Accessor not generated.',
+      'previous is reserved for MutableCell properties. Accessor not generated.'
     ]
 )
 @CellExtension(mutable: true)

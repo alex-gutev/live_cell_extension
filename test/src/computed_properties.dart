@@ -35,8 +35,8 @@ class _$ValueCellPropKeyPerson {
 }
 ''',
   expectedLogItems: [
-    'value is reserved for ValueCell properties. Accessor not be generated.',
-    'previous is reserved for ValueCell properties. Accessor not be generated.'
+    'value is reserved for ValueCell properties. Accessor not generated.',
+    'previous is reserved for ValueCell properties. Accessor not generated.'
   ]
 )
 @CellExtension()
@@ -56,6 +56,9 @@ class Person {
 
   final String value;
   final Person? previous;
+
+  @override
+  int get hashCode => Object.hash(firstName, lastName, age);
 
   // Accessors not generated for static properties
 
