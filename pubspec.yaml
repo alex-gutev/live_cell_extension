@@ -1,6 +1,6 @@
 name: live_cell_extension
 description: Generates cell property accessors for classes annotated with CellExtension from the live_cells package.
-version: 0.4.1
+version: 0.4.2
 repository: https://github.com/alex-gutev/live_cell_extension
 issue_tracker: https://github.com/alex-gutev/live_cell_extension/issues
 

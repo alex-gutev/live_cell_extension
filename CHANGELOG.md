@@ -1,3 +1,8 @@
+## 0.4.2
+
+* Fix issues with generating cell extensions for classes which override `hashCode`.
+* Fix issues with warnings in generated mutable cell extensions.
+
 ## 0.4.1
 
 * Increase `live_cells_core` dependency version to 0.13.0
