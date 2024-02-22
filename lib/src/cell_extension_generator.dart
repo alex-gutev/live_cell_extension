@@ -208,7 +208,7 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
     required List<FieldElement> fields,
   }) {
     final buffer = StringBuffer();
-    buffer.writeln('static $className _copyWith($className _instance, {');
+    buffer.writeln('static $className _copyWith($className \$instance, {');
 
     for (final field in fields) {
       final type = field.type.toString();
@@ -237,7 +237,7 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
           buffer.write('$name: ');
         }
 
-        buffer.writeln('$name ?? _instance.$name,');
+        buffer.writeln('$name ?? \$instance.$name,');
       }
     }
 
