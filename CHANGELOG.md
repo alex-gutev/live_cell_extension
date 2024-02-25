@@ -1,3 +1,7 @@
+## 0.4.8
+
+* Revert dependency in example back to path dependency
+
 ## 0.4.7
 
 * Remove flutter lints.
