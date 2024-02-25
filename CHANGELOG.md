@@ -1,3 +1,7 @@
+## 0.4.6
+
+* Fix analysis issue
+
 ## 0.4.5
 
 * Reduce `analyzer` dependency version back to 6.2.0
