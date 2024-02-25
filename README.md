@@ -47,7 +47,7 @@ You'll also need to add this package and `build_runner` to the `dev_dependencies
 ```yaml
 dev_dependencies:
   build_runner:
-  live_cell_extension: ^0.4.4
+  live_cell_extension: ^0.4.5
   ...
 ```
 

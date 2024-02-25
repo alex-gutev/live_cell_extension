@@ -1,3 +1,7 @@
+## 0.4.5
+
+* Reduce `analyzer` dependency version back to 6.2.0
+
 ## 0.4.4
 
 * Update `live_cells_core` dependency version to 0.15.0
