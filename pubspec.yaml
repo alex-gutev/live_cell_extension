@@ -9,11 +9,11 @@ environment:
 
 dependencies:
   live_cell_annotations: ^0.4.0
-  live_cells_core: ^0.14.0
+  live_cells_core: ^0.15.0
 
   build: ^2.4.1
   source_gen: ^1.5.0
-  analyzer: ^6.2.0
+  analyzer: ^6.4.1
 
 dev_dependencies:
   test:
