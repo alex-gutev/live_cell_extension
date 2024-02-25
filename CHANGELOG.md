@@ -1,3 +1,7 @@
+## 0.4.7
+
+* Remove flutter lints.
+
 ## 0.4.6
 
 * Fix analysis issue
