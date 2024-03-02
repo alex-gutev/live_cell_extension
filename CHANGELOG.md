@@ -1,3 +1,7 @@
+## 0.4.9
+
+* Update live_cells_core dependency to 0.16.0
+
 ## 0.4.8
 
 * Revert dependency in example back to path dependency
