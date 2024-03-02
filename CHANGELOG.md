@@ -1,3 +1,7 @@
+## 0.4.10
+
+* [Internal fix] Fix bug in widget wrapper generator, for widget classes with generic type arguments. 
+
 ## 0.4.9
 
 * Update live_cells_core dependency to 0.16.0

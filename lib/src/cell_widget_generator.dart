@@ -69,7 +69,10 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
   /// Generate a wrapper for a widget defined as per [spec]..
   String _generateCellWidget(_WidgetClassSpec spec) {
     final widgetClass = spec.widgetClass;
-    final className = widgetClass.getDisplayString(withNullability: false);
+
+    final className = widgetClass.getDisplayString(withNullability: false)
+        .replaceAll(RegExp(r'<(.*)>'), '');
+
     final genName = spec.genName ?? 'Cell$className';
     final buffer = StringBuffer();
 
@@ -79,7 +82,7 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
         .firstWhere((element) => element.name.isEmpty);
 
     final typeArgs = spec.typeArguments.isNotEmpty
-        ? '<${spec.typeArguments.join('')}>'
+        ? '<${spec.typeArguments.join(',')}>'
         : '';
 
     if (spec.documentation != null) {
