@@ -89,7 +89,15 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
       buffer.writeln(_makeDocComment(spec.documentation!));
     }
 
-    buffer.writeln('class $genName$typeArgs extends StatelessWidget {');
+    final mixins = spec.mixins.isNotEmpty
+        ? 'with ${spec.mixins.join(',')}'
+        : '';
+
+    final interfaces = spec.interfaces.isNotEmpty
+        ? 'implements ${spec.interfaces.join(',')}'
+        : '';
+
+    buffer.writeln('class $genName$typeArgs extends ${spec.baseClass} $mixins $interfaces {');
 
     buffer.write(_generateConstructor(
         className: genName, 
@@ -167,7 +175,8 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
           type: spec.propertyTypes[param.name]
               ?? param.type.getDisplayString(withNullability: nullable),
           optional: optional,
-          mutable: spec.mutableProperties.contains(param.name)
+          mutable: spec.mutableProperties.contains(param.name),
+          meta: false
       ));
 
       if (param.isRequired) {
@@ -214,7 +223,9 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
     final name = prop.type;
     final suffix = optional ? '?' : '';
 
-    final cell = prop.mutable ? 'MutableCell' : 'ValueCell';
+    final cell = prop.mutable
+        ? 'MutableCell' : prop.meta
+        ? 'MetaCell' : 'ValueCell';
 
     return '$cell<$name>$suffix';
   }
@@ -232,13 +243,14 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
     final className = spec.widgetClass.getDisplayString(withNullability: false);
     
     buffer.writeln('@override');
-    buffer.writeln('Widget build(BuildContext context) {');
-    buffer.writeln('return CellWidget.builder((_) => $className(');
+    buffer.writeln('Widget ${spec.buildMethod}(BuildContext context) {');
+    buffer.writeln('return $className(');
 
     for (final param in constructor.parameters) {
-      if ((spec.excludeProperties.contains(param.name) &&
-          !spec.propertyValues.containsKey(param.name)) ||
-          (param.isSuperFormal && !spec.includeSuperProperties.contains(param.name))) {
+      if (!spec.propertyValues.containsKey(param.name) &&
+          (spec.excludeProperties.contains(param.name) ||
+              (param.isSuperFormal &&
+                  !spec.includeSuperProperties.contains(param.name)))) {
         continue;
       }
 
@@ -263,7 +275,7 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
       buffer.writeln(',');
     }
 
-    buffer.writeln('));');
+    buffer.writeln(');');
     buffer.writeln('}');
 
     return buffer.toString();
@@ -347,6 +359,18 @@ class _WidgetClassSpec {
   /// Properties of the super class to include in the generated wrapper.
   final Set<String> includeSuperProperties;
 
+  /// List of mixins to include in the generated class
+  final List<String> mixins;
+
+  /// List of interfaces that generated class should implement
+  final List<String> interfaces;
+
+  /// Name of the generated build method
+  final String buildMethod;
+
+  /// Name of the class that the generated class extends
+  final String baseClass;
+
   /// Documentation comment for the generated class
   final String? documentation;
 
@@ -361,7 +385,11 @@ class _WidgetClassSpec {
     required this.propertyTypes,
     required this.addProperties,
     required this.includeSuperProperties,
-    required this.documentation
+    required this.mixins,
+    required this.interfaces,
+    required this.buildMethod,
+    required this.baseClass,
+    required this.documentation,
   });
 
   /// Parse a [_WidgetClassSpect] from the generic object [spec].
@@ -412,6 +440,19 @@ class _WidgetClassSpec {
         ?.map((e) => e.toSymbolValue()!)
         .toSet();
 
+    final mixins = spec.getField('mixins')
+        ?.toListValue()
+        ?.map((e) => e.toSymbolValue()!)
+        .toList();
+
+    final interfaces = spec.getField('interfaces')
+        ?.toListValue()
+        ?.map((e) => e.toSymbolValue()!)
+        .toList();
+
+    final buildMethod = spec.getField('buildMethod')!.toSymbolValue()!;
+    final baseClass = spec.getField('baseClass')!.toSymbolValue()!;
+
     final documentation = spec.getField('documentation')?.toStringValue();
 
     return _WidgetClassSpec(
@@ -425,6 +466,10 @@ class _WidgetClassSpec {
         propertyTypes: propertyTypes ?? {},
         addProperties: addProperties ?? [],
         includeSuperProperties: superProps ?? {},
+        mixins: mixins ?? [],
+        interfaces: interfaces ?? [],
+        buildMethod: buildMethod,
+        baseClass: baseClass,
         documentation: documentation
     );
   }
@@ -444,6 +489,9 @@ class _WidgetProperty {
   /// Is this a mutable property?
   final bool mutable;
 
+  /// Should this property be held in a meta cell?
+  final bool meta;
+
   /// Default value to initialize property to.
   ///
   /// If null the property does not have a default value.
@@ -457,6 +505,7 @@ class _WidgetProperty {
     required this.type,
     required this.optional,
     required this.mutable,
+    required this.meta,
     this.defaultValue,
     this.documentation
   });
@@ -470,6 +519,7 @@ class _WidgetProperty {
     final defaultValue = spec.getField('defaultValue')?.toStringValue();
     final optional = spec.getField('optional')!.toBoolValue()!;
     final mutable = spec.getField('mutable')!.toBoolValue()!;
+    final meta = spec.getField('meta')!.toBoolValue()!;
 
     final documentation = spec.getField('documentation')?.toStringValue();
 
@@ -480,6 +530,7 @@ class _WidgetProperty {
         ),
         optional: optional,
         mutable: mutable,
+        meta: meta,
         defaultValue: defaultValue,
         documentation: documentation
     );
