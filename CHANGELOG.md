@@ -1,3 +1,7 @@
+## 0.4.13
+
+* Update live_cells_core dependency version to 0.19.0
+
 ## 0.4.12
 
 * Update live_cells_core dependency version to 0.18.1
