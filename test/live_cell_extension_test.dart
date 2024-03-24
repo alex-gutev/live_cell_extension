@@ -59,4 +59,20 @@ Future<void> main() async {
     ),
     CellExtensionGenerator(),
   );
+
+  testAnnotatedElements(
+    await initializeLibraryReaderForDirectory(
+        'test/src',
+        'nullable_extension.dart'
+    ),
+    CellExtensionGenerator(),
+  );
+
+  testAnnotatedElements(
+    await initializeLibraryReaderForDirectory(
+        'test/src',
+        'nullable_mutable_extension.dart'
+    ),
+    CellExtensionGenerator(),
+  );
 }

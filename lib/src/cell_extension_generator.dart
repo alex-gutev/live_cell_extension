@@ -132,11 +132,17 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
     final extensionName = spec.name ?? '${className}CellExtension';
     final keyClass = '_\$ValueCellPropKey$className';
 
+    final nullSuffix = spec.nullable ? '?' : '';
+
     buffer.writeln('// Extends ValueCell with accessors for $className properties');
-    buffer.writeln('extension $extensionName on ValueCell<$className> {');
+    buffer.writeln('extension $extensionName on ValueCell<$className$nullSuffix> {');
 
     for (final field in fields) {
-      buffer.writeln(_generateCellAccessor(field, keyClass));
+      buffer.writeln(_generateCellAccessor(
+          field: field,
+          keyClass: keyClass,
+          nullable: spec.nullable
+      ));
     }
 
     buffer.writeln('}');
@@ -146,12 +152,24 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
   }
 
   /// Generate an accessor for a class property which returns a [ValueCell] holding a [type].
-  String _generateCellAccessor(FieldElement field, String keyClass) {
+  String _generateCellAccessor({
+    required FieldElement field,
+    required String keyClass,
+    required bool nullable,
+  }) {
     final name = field.name;
-    final type = field.type.toString();
+    final type = field.type.getDisplayString(withNullability: false);
 
-    return 'ValueCell<$type> get $name => apply('
-        '(value) => value.$name,'
+    final nullSuffix = nullable ||
+        [NullabilitySuffix.question, NullabilitySuffix.star]
+            .contains(field.type.nullabilitySuffix)
+        ? '?'
+        : '';
+
+    final nullOperator = nullable ? '?' : '';
+
+    return 'ValueCell<$type$nullSuffix> get $name => apply('
+        '(value) => value$nullOperator.$name,'
         'key: $keyClass(this, #$name)'
         ').store(changesOnly: true);';
   }
@@ -301,25 +319,30 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
 
 /// Decoded cell extension annotation
 class _CellExtensionSpec {
-  /// Name of the ValueCell extension to generate
+  /// Name of the ValueCell extension to generate.
   final String? name;
 
-  /// Name of the MutableCell extension to generate
+  /// Name of the MutableCell extension to generate.
   final String? mutableName;
 
-  /// Should an extension on MutableCell be generated
+  /// Should an extension on MutableCell be generated?
   final bool mutable;
+
+  /// Should extensions on nullable types be generated?
+  final bool nullable;
 
   const _CellExtensionSpec({
     required this.name,
     required this.mutableName,
-    required this.mutable
+    required this.mutable,
+    required this.nullable
   });
 
   /// Parse the encoded annotation from [object].
   factory _CellExtensionSpec.parse(DartObject object) => _CellExtensionSpec(
       name: object.getField('name')?.toSymbolValue(),
       mutableName: object.getField('mutableName')?.toSymbolValue(),
-      mutable: object.getField('mutable')?.toBoolValue() ?? false
+      mutable: object.getField('mutable')?.toBoolValue() ?? false,
+      nullable: object.getField('nullable')?.toBoolValue() ?? false
   );
 }
