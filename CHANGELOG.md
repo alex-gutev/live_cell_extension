@@ -1,3 +1,7 @@
+## 0.5.0
+
+* Add support for `nullable` property of `CellExtension` annotation.
+
 ## 0.4.13
 
 * Update live_cells_core dependency version to 0.19.0
