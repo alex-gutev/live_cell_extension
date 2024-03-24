@@ -88,6 +88,9 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
     if (spec.documentation != null) {
       buffer.writeln(_makeDocComment(spec.documentation!));
     }
+    else {
+      buffer.writeln(_makeDefaultDocComment(className));
+    }
 
     final mixins = spec.mixins.isNotEmpty
         ? 'with ${spec.mixins.join(',')}'
@@ -315,6 +318,16 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
     return lines.map((e) => '/// $e')
         .join(Platform.lineTerminator);
   }
+
+  String _makeDefaultDocComment(String widgetClass) => _makeDocComment(
+    '[$widgetClass] widget with its properties controlled by [ValueCell]s.\n'
+        '\n'
+        'The constructor takes the same arguments as the unnamed constructor of [$widgetClass],\n'
+        "but as [ValueCell]'s. This binds each property value to the [ValueCell] given\n"
+        'in the constructor. If the cell value is changed, the value of the corresponding\n'
+        'property to which it is bound is automatically updated to reflect the value of\n'
+        'the cell.'
+  );
 }
 
 /// Specification for a widget wrapper class
