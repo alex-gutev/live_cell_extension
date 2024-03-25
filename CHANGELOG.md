@@ -1,3 +1,9 @@
+## 0.5.1
+
+Bug Fixes:
+
+* Add support for `CellExtension` on generic classes.
+
 ## 0.5.0
 
 * Add support for `nullable` property of `CellExtension` annotation.
