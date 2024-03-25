@@ -7,7 +7,7 @@ import 'package:source_gen_test/annotations.dart';
 
 @ShouldGenerate(
   r'''
-// Extends ValueCell with accessors for MyClass properties
+/// Extends ValueCell with accessors for MyClass properties
 extension MyClassCellExtension on ValueCell<MyClass> {
   ValueCell<int> get a =>
       apply((value) => value.a, key: _$ValueCellPropKeyMyClass(this, #a))

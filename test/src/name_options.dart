@@ -7,7 +7,7 @@ import 'package:source_gen_test/annotations.dart';
 
 @ShouldGenerate(
     r'''
-// Extends ValueCell with accessors for Person properties
+/// Extends ValueCell with accessors for Person properties
 extension ThePersonCell on ValueCell<Person> {
   ValueCell<String> get firstName => apply((value) => value.firstName,
           key: _$ValueCellPropKeyPerson(this, #firstName))
