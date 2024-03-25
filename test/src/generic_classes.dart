@@ -25,9 +25,49 @@ class _$ValueCellPropKeyWrapper1 {
   @override
   int get hashCode => Object.hash(runtimeType, _cell, _prop);
 }
+
+/// Extends MutableCell with accessors for Wrapper1 properties
+extension Wrapper1MutableCellExtension<T> on MutableCell<Wrapper1<T>> {
+  static Wrapper1 _copyWith(
+    Wrapper1 $instance, {
+    T? wrappedValue,
+    int? wrapperId,
+  }) {
+    return Wrapper1(
+      wrappedValue: wrappedValue ?? $instance.wrappedValue,
+      wrapperId: wrapperId ?? $instance.wrapperId,
+    );
+  }
+
+  MutableCell<T> get wrappedValue =>
+      mutableApply((value) => value.wrappedValue, (p) {
+        value = _copyWith(value, wrappedValue: p);
+      },
+          key: _$MutableCellPropKeyWrapper1(this, #wrappedValue),
+          changesOnly: true);
+  MutableCell<int> get wrapperId =>
+      mutableApply((value) => value.wrapperId, (p) {
+        value = _copyWith(value, wrapperId: p);
+      },
+          key: _$MutableCellPropKeyWrapper1(this, #wrapperId),
+          changesOnly: true);
+}
+
+class _$MutableCellPropKeyWrapper1 {
+  final ValueCell _cell;
+  final Symbol _prop;
+  _$MutableCellPropKeyWrapper1(this._cell, this._prop);
+  @override
+  bool operator ==(other) =>
+      other is _$MutableCellPropKeyWrapper1 &&
+      _cell == other._cell &&
+      _prop == other._prop;
+  @override
+  int get hashCode => Object.hash(runtimeType, _cell, _prop);
+}
 '''
 )
-@CellExtension()
+@CellExtension(mutable: true)
 class Wrapper1<T> {
   final T wrappedValue;
   final int wrapperId;
@@ -64,9 +104,50 @@ class _$ValueCellPropKeyWrapper2 {
   @override
   int get hashCode => Object.hash(runtimeType, _cell, _prop);
 }
+
+/// Extends MutableCell with accessors for Wrapper2 properties
+extension Wrapper2MutableCellExtension<T extends List<dynamic>>
+    on MutableCell<Wrapper2<T>> {
+  static Wrapper2 _copyWith(
+    Wrapper2 $instance, {
+    T? wrappedValue,
+    int? wrapperId,
+  }) {
+    return Wrapper2(
+      wrappedValue: wrappedValue ?? $instance.wrappedValue,
+      wrapperId: wrapperId ?? $instance.wrapperId,
+    );
+  }
+
+  MutableCell<T> get wrappedValue =>
+      mutableApply((value) => value.wrappedValue, (p) {
+        value = _copyWith(value, wrappedValue: p);
+      },
+          key: _$MutableCellPropKeyWrapper2(this, #wrappedValue),
+          changesOnly: true);
+  MutableCell<int> get wrapperId =>
+      mutableApply((value) => value.wrapperId, (p) {
+        value = _copyWith(value, wrapperId: p);
+      },
+          key: _$MutableCellPropKeyWrapper2(this, #wrapperId),
+          changesOnly: true);
+}
+
+class _$MutableCellPropKeyWrapper2 {
+  final ValueCell _cell;
+  final Symbol _prop;
+  _$MutableCellPropKeyWrapper2(this._cell, this._prop);
+  @override
+  bool operator ==(other) =>
+      other is _$MutableCellPropKeyWrapper2 &&
+      _cell == other._cell &&
+      _prop == other._prop;
+  @override
+  int get hashCode => Object.hash(runtimeType, _cell, _prop);
+}
 '''
 )
-@CellExtension()
+@CellExtension(mutable: true)
 class Wrapper2<T extends List> {
   final T wrappedValue;
   final int wrapperId;
@@ -103,9 +184,50 @@ class _$ValueCellPropKeyWrapper3 {
   @override
   int get hashCode => Object.hash(runtimeType, _cell, _prop);
 }
+
+/// Extends MutableCell with accessors for Wrapper3 properties
+extension Wrapper3MutableCellExtension<T extends List<dynamic>?>
+    on MutableCell<Wrapper3<T>> {
+  static Wrapper3 _copyWith(
+    Wrapper3 $instance, {
+    T? wrappedValue,
+    int? wrapperId,
+  }) {
+    return Wrapper3(
+      wrappedValue: wrappedValue ?? $instance.wrappedValue,
+      wrapperId: wrapperId ?? $instance.wrapperId,
+    );
+  }
+
+  MutableCell<T> get wrappedValue =>
+      mutableApply((value) => value.wrappedValue, (p) {
+        value = _copyWith(value, wrappedValue: p);
+      },
+          key: _$MutableCellPropKeyWrapper3(this, #wrappedValue),
+          changesOnly: true);
+  MutableCell<int> get wrapperId =>
+      mutableApply((value) => value.wrapperId, (p) {
+        value = _copyWith(value, wrapperId: p);
+      },
+          key: _$MutableCellPropKeyWrapper3(this, #wrapperId),
+          changesOnly: true);
+}
+
+class _$MutableCellPropKeyWrapper3 {
+  final ValueCell _cell;
+  final Symbol _prop;
+  _$MutableCellPropKeyWrapper3(this._cell, this._prop);
+  @override
+  bool operator ==(other) =>
+      other is _$MutableCellPropKeyWrapper3 &&
+      _cell == other._cell &&
+      _prop == other._prop;
+  @override
+  int get hashCode => Object.hash(runtimeType, _cell, _prop);
+}
 '''
 )
-@CellExtension()
+@CellExtension(mutable: true)
 class Wrapper3<T extends List?> {
   final T wrappedValue;
   final int wrapperId;
@@ -145,9 +267,58 @@ class _$ValueCellPropKeyWrapper4 {
   @override
   int get hashCode => Object.hash(runtimeType, _cell, _prop);
 }
+
+/// Extends MutableCell with accessors for Wrapper4 properties
+extension Wrapper4MutableCellExtension<T extends Object,
+    U extends List<dynamic>> on MutableCell<Wrapper4<T, U>> {
+  static Wrapper4 _copyWith(
+    Wrapper4 $instance, {
+    T? wrappedValue1,
+    U? wrappedValue2,
+    int? wrapperId,
+  }) {
+    return Wrapper4(
+      wrappedValue1: wrappedValue1 ?? $instance.wrappedValue1,
+      wrappedValue2: wrappedValue2 ?? $instance.wrappedValue2,
+      wrapperId: wrapperId ?? $instance.wrapperId,
+    );
+  }
+
+  MutableCell<T> get wrappedValue1 =>
+      mutableApply((value) => value.wrappedValue1, (p) {
+        value = _copyWith(value, wrappedValue1: p);
+      },
+          key: _$MutableCellPropKeyWrapper4(this, #wrappedValue1),
+          changesOnly: true);
+  MutableCell<U> get wrappedValue2 =>
+      mutableApply((value) => value.wrappedValue2, (p) {
+        value = _copyWith(value, wrappedValue2: p);
+      },
+          key: _$MutableCellPropKeyWrapper4(this, #wrappedValue2),
+          changesOnly: true);
+  MutableCell<int> get wrapperId =>
+      mutableApply((value) => value.wrapperId, (p) {
+        value = _copyWith(value, wrapperId: p);
+      },
+          key: _$MutableCellPropKeyWrapper4(this, #wrapperId),
+          changesOnly: true);
+}
+
+class _$MutableCellPropKeyWrapper4 {
+  final ValueCell _cell;
+  final Symbol _prop;
+  _$MutableCellPropKeyWrapper4(this._cell, this._prop);
+  @override
+  bool operator ==(other) =>
+      other is _$MutableCellPropKeyWrapper4 &&
+      _cell == other._cell &&
+      _prop == other._prop;
+  @override
+  int get hashCode => Object.hash(runtimeType, _cell, _prop);
+}
 '''
 )
-@CellExtension()
+@CellExtension(mutable: true)
 class Wrapper4<T extends Object, U extends List> {
   final T wrappedValue1;
   final U wrappedValue2;

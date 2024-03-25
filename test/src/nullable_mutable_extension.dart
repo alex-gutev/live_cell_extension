@@ -30,7 +30,7 @@ class _$ValueCellPropKeyPerson {
   int get hashCode => Object.hash(runtimeType, _cell, _prop);
 }
 
-// Extends MutableCell with accessors for Person properties
+/// Extends MutableCell with accessors for Person properties
 extension PersonMutableCellExtension on MutableCell<Person> {
   static Person _copyWith(
     Person $instance, {
