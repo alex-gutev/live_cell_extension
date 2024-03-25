@@ -91,7 +91,8 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
     buffer.write(_generateCellExtension(
         spec: spec,
         className: element.name,
-        fields: fields
+        fields: fields,
+        types: element.typeParameters
     ));
 
     if (spec.mutable) {
@@ -125,7 +126,8 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
   String _generateCellExtension({
     required _CellExtensionSpec spec,
     required String className,
-    required List<FieldElement> fields
+    required List<FieldElement> fields,
+    required List<TypeParameterElement> types
   }) {
     final buffer = StringBuffer();
 
@@ -134,8 +136,16 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
 
     final nullSuffix = spec.nullable ? '?' : '';
 
-    buffer.writeln('// Extends ValueCell with accessors for $className properties');
-    buffer.writeln('extension $extensionName on ValueCell<$className$nullSuffix> {');
+    final typeParams = types.isNotEmpty
+        ? '<${types.map((e) => e.getDisplayString(withNullability: true)).join(',')}>'
+        : '';
+
+    final classTypeParams = types.isNotEmpty
+        ? '<${types.map((e) => e.name).join(',')}>'
+        : '';
+
+    buffer.writeln('/// Extends ValueCell with accessors for $className properties');
+    buffer.writeln('extension $extensionName$typeParams on ValueCell<$className$classTypeParams$nullSuffix> {');
 
     for (final field in fields) {
       buffer.writeln(_generateCellAccessor(
