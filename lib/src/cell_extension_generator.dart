@@ -115,7 +115,8 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
           spec: spec,
           className: element.name,
           fields: mutableFields,
-          constructor: visitor.constructor!
+          constructor: visitor.constructor!,
+          types: element.typeParameters
       ));
     }
 
@@ -190,14 +191,23 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
     required String className,
     required List<FieldElement> fields,
     required ConstructorElement constructor,
+    required List<TypeParameterElement> types,
   }) {
     final buffer = StringBuffer();
 
     final extensionName = spec.mutableName ?? '${className}MutableCellExtension';
     final keyClass = '_\$MutableCellPropKey$className';
-    
-    buffer.writeln('// Extends MutableCell with accessors for $className properties');
-    buffer.writeln('extension $extensionName on MutableCell<$className> {');
+
+    final typeParams = types.isNotEmpty
+        ? '<${types.map((e) => e.getDisplayString(withNullability: true)).join(',')}>'
+        : '';
+
+    final classTypeParams = types.isNotEmpty
+        ? '<${types.map((e) => e.name).join(',')}>'
+        : '';
+
+    buffer.writeln('/// Extends MutableCell with accessors for $className properties');
+    buffer.writeln('extension $extensionName$typeParams on MutableCell<$className$classTypeParams> {');
 
     buffer.write(_generateCopyWithMethod(
         className: className,
