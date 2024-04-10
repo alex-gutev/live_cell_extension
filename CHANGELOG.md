@@ -1,3 +1,7 @@
+## 0.5.2
+
+* Increase `live_cells_core` dependency version to `0.21.0`
+
 ## 0.5.1
 
 Bug Fixes:
