@@ -1,3 +1,9 @@
+## 0.5.4
+
+No new user-facing features:
+
+* Add support for `stateMixins` property of `WidgetSpec` annotation.
+
 ## 0.5.3
 
 * Increase `live_cells_core` dependency version to `0.22.0`
