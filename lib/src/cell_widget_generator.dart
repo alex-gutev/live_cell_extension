@@ -115,11 +115,24 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
     buffer.writeln();
     buffer.write(_generateBindMethod(genName, props));
 
+    if (spec.stateMixins.isNotEmpty) {
+      final mixins = spec.stateMixins.join(',');
+      final stateClass = '_${genName}State$typeArgs';
+      final stateSuperClass = 'State<$genName$typeArgs>';
+
+      buffer.writeln('@override');
+      buffer.writeln('$stateSuperClass createState() => $stateClass();');
+
+      buffer.writeln('}');
+      buffer.writeln('class $stateClass extends $stateSuperClass with $mixins {');
+    }
+
     buffer.writeln();
     buffer.write(_generateBuild(
         spec: spec,
         constructor: constructor,
-        properties: props
+        properties: props,
+        isStatefulWidget: spec.stateMixins.isNotEmpty
     ));
 
     buffer.writeln('}');
@@ -240,7 +253,8 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
   String _generateBuild({
     required _WidgetClassSpec spec,
     required ConstructorElement constructor,
-    required List<_WidgetProperty> properties
+    required List<_WidgetProperty> properties,
+    required bool isStatefulWidget,
   }) {
     final buffer = StringBuffer();
     final className = spec.widgetClass.getDisplayString(withNullability: false);
@@ -265,6 +279,9 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
         buffer.write(spec.propertyValues[param.name]);
       }
       else {
+        if (isStatefulWidget) {
+          buffer.write('widget.');
+        }
         buffer.write(param.name);
 
         if (param.isRequired || param.hasDefaultValue) {
@@ -387,6 +404,9 @@ class _WidgetClassSpec {
   /// Documentation comment for the generated class
   final String? documentation;
 
+  /// List of mixins to mix into the generated widget [State] class.
+  final List<String> stateMixins;
+
   _WidgetClassSpec({
     required this.widgetClass,
     required this.genName,
@@ -403,6 +423,7 @@ class _WidgetClassSpec {
     required this.buildMethod,
     required this.baseClass,
     required this.documentation,
+    required this.stateMixins
   });
 
   /// Parse a [_WidgetClassSpect] from the generic object [spec].
@@ -468,6 +489,11 @@ class _WidgetClassSpec {
 
     final documentation = spec.getField('documentation')?.toStringValue();
 
+    final stateMixins = spec.getField('stateMixins')
+        ?.toListValue()
+        ?.map((e) => e.toSymbolValue()!)
+        .toList();
+
     return _WidgetClassSpec(
         widgetClass: widgetClass as InterfaceType,
         genName: genName,
@@ -483,7 +509,8 @@ class _WidgetClassSpec {
         interfaces: interfaces ?? [],
         buildMethod: buildMethod,
         baseClass: baseClass,
-        documentation: documentation
+        documentation: documentation,
+        stateMixins: stateMixins ?? []
     );
   }
 }
