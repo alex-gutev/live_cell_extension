@@ -1,3 +1,7 @@
+## 0.5.5
+
+* Increase `live_cells_core` dependency version to `0.23.0`
+
 ## 0.5.4
 
 No new user-facing features:
