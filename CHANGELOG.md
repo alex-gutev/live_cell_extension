@@ -1,3 +1,10 @@
+## 0.5.6
+
+* Remove `live_cells_core` dependency.
+
+  In future `live_cell_extension` will be tied to a specific `live_cells_core` version via
+  the `live_cell_annotation` dependency.
+
 ## 0.5.5
 
 * Increase `live_cells_core` dependency version to `0.23.0`
