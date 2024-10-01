@@ -262,27 +262,56 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
     buffer.writeln('}) {');
     buffer.writeln('return $className(');
 
+    final fieldNames = fields.map((f) => f.name).toSet();
+
     for (final param in constructor.parameters) {
-      if (param.isInitializingFormal && param is FieldFormalParameterElement) {
-        final field = param.field!;
-        final name = field.name;
-
-        if (allReservedFieldNames.contains(name)) {
-          continue;
-        }
-
-        if (param.isNamed) {
-          buffer.write('$name: ');
-        }
-
-        buffer.writeln('$name ?? \$instance.$name,');
-      }
+      _addConstructorParam(
+          buffer: buffer,
+          param: param,
+          fields: fieldNames
+      );
     }
 
     buffer.writeln(');');
     buffer.writeln('}');
 
     return buffer.toString();
+  }
+
+  /// Emit code to [buffer] for a field parameter in the _copyWith method.
+  void _addConstructorParam({
+    required StringBuffer buffer,
+    required ParameterElement param,
+    required Set<String> fields,
+  }) {
+    if (param.isInitializingFormal && param is FieldFormalParameterElement) {
+      final field = param.field!;
+      final name = field.name;
+
+      if (allReservedFieldNames.contains(name)) {
+        return;
+      }
+
+      if (param.isNamed) {
+        buffer.write('$name: ');
+      }
+
+      if (fields.contains(name)) {
+        buffer.writeln('$name ?? \$instance.$name,');
+      }
+      else {
+        buffer.writeln('\$instance.$name,');
+      }
+    }
+    else if (param.isSuperFormal && param is SuperFormalParameterElement) {
+      if (param.superConstructorParameter != null) {
+        _addConstructorParam(
+            buffer: buffer,
+            param: param.superConstructorParameter!,
+            fields: fields
+        );
+      }
+    }
   }
 
   /// Generate a property cell key class named [name].

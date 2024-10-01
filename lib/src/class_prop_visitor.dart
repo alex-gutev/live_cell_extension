@@ -27,11 +27,21 @@ class ClassPropVisitor extends SimpleElementVisitor<void> {
       _constructor = element;
 
       for (final param in element.parameters) {
-        if (param.isInitializingFormal && param is FieldFormalParameterElement) {
-          if (param.field != null) {
-            _mutableFields.add(param.field!);
-          }
-        }
+        _addConstructorParam(param);
+      }
+    }
+  }
+
+  /// Add the fields associated with a constructor parameter
+  void _addConstructorParam(ParameterElement param) {
+    if (param.isInitializingFormal && param is FieldFormalParameterElement) {
+      if (param.field != null) {
+        _mutableFields.add(param.field!);
+      }
+    }
+    else if (param.isSuperFormal && param is SuperFormalParameterElement) {
+      if (param.superConstructorParameter != null) {
+        _addConstructorParam(param.superConstructorParameter!);
       }
     }
   }
