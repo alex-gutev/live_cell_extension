@@ -1,3 +1,7 @@
+## 0.5.7
+
+* Fix issues with extensions on class with inheritance.
+
 ## 0.5.6
 
 * Remove `live_cells_core` dependency.
