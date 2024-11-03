@@ -278,6 +278,11 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
     
     buffer.writeln('@override');
     buffer.writeln('Widget ${spec.buildMethod}(BuildContext context) {');
+
+    if (spec.stateMixins.isNotEmpty) {
+      buffer.writeln('return CellWidget.builder((context) {');
+    }
+
     buffer.writeln('return $className(');
 
     for (final param in constructor.parameters) {
@@ -315,6 +320,11 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
     }
 
     buffer.writeln(');');
+
+    if (spec.stateMixins.isNotEmpty) {
+      buffer.writeln('});');
+    }
+
     buffer.writeln('}');
 
     return buffer.toString();

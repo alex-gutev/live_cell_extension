@@ -1,3 +1,7 @@
+## 0.5.9
+
+Fix issue with cell widget generator for `StatefulWidget`s.
+
 ## 0.5.8
 
 No new user-facing features:
