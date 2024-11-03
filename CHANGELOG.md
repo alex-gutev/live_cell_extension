@@ -1,3 +1,9 @@
+## 0.5.8
+
+No new user-facing features:
+
+* Add support for `cellProperties` and `deprecationNotice` properties of `WidgetSpec` annotation.
+
 ## 0.5.7
 
 * Fix issues with extensions on class with inheritance.
