@@ -92,6 +92,10 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
       buffer.writeln(_makeDefaultDocComment(className));
     }
 
+    if (spec.deprecationNotice != null) {
+      buffer.writeln('@Deprecated("${spec.deprecationNotice}")');
+    }
+
     final mixins = spec.mixins.isNotEmpty
         ? 'with ${spec.mixins.join(',')}'
         : '';
@@ -192,7 +196,8 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
               ?? param.type.getDisplayString(withNullability: nullable),
           optional: optional,
           mutable: spec.mutableProperties.contains(param.name),
-          meta: false
+          meta: false,
+          isCell: spec.isCellProperty(param.name)
       ));
 
       if (param.isRequired) {
@@ -205,7 +210,12 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
         final defaultValue = spec.propertyDefaultValues[param.name]
             ?? param.defaultValueCode;
 
-        buffer.write(' = const ValueCell.value($defaultValue)');
+        if (!spec.isCellProperty(param.name)) {
+          buffer.write(' = $defaultValue');
+        }
+        else {
+          buffer.write(' = const ValueCell.value($defaultValue)');
+        }
       }
 
       buffer.writeln(',');
@@ -237,6 +247,13 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
   /// null type is returned.
   String _cellPropType(_WidgetProperty prop, bool optional) {
     final name = prop.type;
+
+    if (!prop.isCell) {
+      return optional && !name.endsWith('?')
+          ? '$name?'
+          : name;
+    }
+
     final suffix = optional ? '?' : '';
 
     final cell = prop.mutable
@@ -284,11 +301,13 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
         }
         buffer.write(param.name);
 
-        if (param.isRequired || param.hasDefaultValue) {
-          buffer.write('()');
-        }
-        else {
-          buffer.write('?.call()');
+        if (spec.isCellProperty(param.name)) {
+          if (param.isRequired || param.hasDefaultValue) {
+            buffer.write('()');
+          }
+          else {
+            buffer.write('?.call()');
+          }
         }
       }
 
@@ -364,6 +383,9 @@ class _WidgetClassSpec {
   /// Set of properties to exclude from the generated wrapper class constructor
   final Set<String> excludeProperties;
 
+  /// If non-null only these properties should be cells
+  final Set<String>? cellProperties;
+
   /// Map from property names to the corresponding code computing the property values
   ///
   /// If a property appears as a key this map, the code in the corresponding value
@@ -407,12 +429,16 @@ class _WidgetClassSpec {
   /// List of mixins to mix into the generated widget [State] class.
   final List<String> stateMixins;
 
+  /// The deprecation notice to add to generated class
+  final String? deprecationNotice;
+
   _WidgetClassSpec({
     required this.widgetClass,
     required this.genName,
     required this.typeArguments,
     required this.mutableProperties,
     required this.excludeProperties,
+    required this.cellProperties,
     required this.propertyValues,
     required this.propertyDefaultValues,
     required this.propertyTypes,
@@ -423,7 +449,8 @@ class _WidgetClassSpec {
     required this.buildMethod,
     required this.baseClass,
     required this.documentation,
-    required this.stateMixins
+    required this.stateMixins,
+    required this.deprecationNotice
   });
 
   /// Parse a [_WidgetClassSpect] from the generic object [spec].
@@ -449,6 +476,11 @@ class _WidgetClassSpec {
         .toSet();
 
     final excludedProps = spec.getField('excludeProperties')
+        ?.toListValue()
+        ?.map((e) => e.toSymbolValue()!)
+        .toSet();
+
+    final cellProperties = spec.getField('cellProperties')
         ?.toListValue()
         ?.map((e) => e.toSymbolValue()!)
         .toSet();
@@ -489,6 +521,8 @@ class _WidgetClassSpec {
 
     final documentation = spec.getField('documentation')?.toStringValue();
 
+    final deprecationNotice = spec.getField('deprecationNotice')?.toStringValue();
+
     final stateMixins = spec.getField('stateMixins')
         ?.toListValue()
         ?.map((e) => e.toSymbolValue()!)
@@ -500,6 +534,7 @@ class _WidgetClassSpec {
         typeArguments: typeArgs ?? [],
         mutableProperties: mutableProps ?? {}, 
         excludeProperties: excludedProps ?? {},
+        cellProperties: cellProperties,
         propertyValues: propertyValues ?? {},
         propertyDefaultValues: propertyDefaultValues ?? {},
         propertyTypes: propertyTypes ?? {},
@@ -510,8 +545,14 @@ class _WidgetClassSpec {
         buildMethod: buildMethod,
         baseClass: baseClass,
         documentation: documentation,
-        stateMixins: stateMixins ?? []
+        stateMixins: stateMixins ?? [],
+        deprecationNotice: deprecationNotice
     );
+  }
+
+  /// Is [name] a cell property?
+  bool isCellProperty(String name) {
+    return cellProperties?.contains(name) ?? true;
   }
 }
 
@@ -540,12 +581,16 @@ class _WidgetProperty {
   /// Documentation for this property
   final String? documentation;
 
+  /// Is this a cell property
+  final bool isCell;
+
   _WidgetProperty({
     required this.name,
     required this.type,
     required this.optional,
     required this.mutable,
     required this.meta,
+    required this.isCell,
     this.defaultValue,
     this.documentation
   });
@@ -571,6 +616,7 @@ class _WidgetProperty {
         optional: optional,
         mutable: mutable,
         meta: meta,
+        isCell: true,
         defaultValue: defaultValue,
         documentation: documentation
     );
