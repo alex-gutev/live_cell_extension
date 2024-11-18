@@ -1,3 +1,7 @@
+## 0.5.10
+
+Fix issue with assigning null values to generated property cells.
+
 ## 0.5.9
 
 Fix issue with cell widget generator for `StatefulWidget`s.
