@@ -32,24 +32,21 @@ class _$ValueCellPropKeyPerson {
 
 /// Extends MutableCell with accessors for Person properties
 extension TheMutablePersonCell on MutableCell<Person> {
-  static Person _copyWith(
-    Person $instance, {
-    String? firstName,
-    String? lastName,
-  }) {
-    return Person(
-      firstName: firstName ?? $instance.firstName,
-      lastName: lastName ?? $instance.lastName,
-    );
-  }
-
   MutableCell<String> get firstName =>
       mutableApply((value) => value.firstName, (p) {
-        value = _copyWith(value, firstName: p);
+        final $value = value;
+        value = Person(
+          firstName: p,
+          lastName: $value.lastName,
+        );
       }, key: _$MutableCellPropKeyPerson(this, #firstName), changesOnly: true);
   MutableCell<String> get lastName =>
       mutableApply((value) => value.lastName, (p) {
-        value = _copyWith(value, lastName: p);
+        final $value = value;
+        value = Person(
+          firstName: $value.firstName,
+          lastName: p,
+        );
       }, key: _$MutableCellPropKeyPerson(this, #lastName), changesOnly: true);
 }
 

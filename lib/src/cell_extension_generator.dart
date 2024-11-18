@@ -209,14 +209,14 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
     buffer.writeln('/// Extends MutableCell with accessors for $className properties');
     buffer.writeln('extension $extensionName$typeParams on MutableCell<$className$classTypeParams> {');
 
-    buffer.write(_generateCopyWithMethod(
-        className: className,
-        fields: fields,
-        constructor: constructor
-    ));
-
     for (final field in fields) {
-      buffer.writeln(_generateMutableAccessor(field, keyClass));
+      buffer.writeln(_generateMutableAccessor(
+          className: className,
+          fields: fields,
+          constructor: constructor,
+          field: field,
+          keyClass: keyClass
+      ));
     }
 
     buffer.writeln('}');
@@ -227,40 +227,48 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
 
 
   /// Generate an accessor for a class property which returns a [MutableCell] holding a [type].
-  String _generateMutableAccessor(FieldElement field, String keyClass) {
+  String _generateMutableAccessor({
+    required String className,
+    required ConstructorElement constructor,
+    required List<FieldElement> fields,
+    required FieldElement field,
+    required String keyClass
+  }) {
     final name = field.name;
     final type = field.type.toString();
 
+    final copy = _generateCopyConstruct(
+        className: className,
+        constructor: constructor,
+        fields: fields,
+        fieldName: name,
+        fieldValue: 'p',
+        valueVar: '\$value'
+    );
+
     return 'MutableCell<$type> get $name => mutableApply('
         '(value) => value.$name,'
-        '(p) { value = _copyWith(value, $name: p); },'
+        '(p) { final \$value = value; value = $copy; },'
         'key: $keyClass(this, #$name),'
         'changesOnly: true'
         ');';
   }
 
-  /// Generate a _copyWith static method for [className] which calls [constructor].
-  String _generateCopyWithMethod({
+  /// Generate a call to the [constructor] of [className] which copies the property values.
+  ///
+  /// The generated code copies the values of the instance properties of the
+  /// object stored in the variable [valueVar] with the exception of the
+  /// property [fieldName], which is given the value [fieldValue].
+  String _generateCopyConstruct({
     required String className,
     required ConstructorElement constructor,
     required List<FieldElement> fields,
+    required String fieldName,
+    required String fieldValue,
+    required String valueVar,
   }) {
     final buffer = StringBuffer();
-    buffer.writeln('static $className _copyWith($className \$instance, {');
-
-    for (final field in fields) {
-      final type = field.type.toString();
-      final suffix = field.type.nullabilitySuffix == NullabilitySuffix.none
-          ? '?'
-          : '';
-
-      final name = field.name;
-
-      buffer.writeln('$type$suffix $name,');
-    }
-
-    buffer.writeln('}) {');
-    buffer.writeln('return $className(');
+    buffer.writeln('$className(');
 
     final fieldNames = fields.map((f) => f.name).toSet();
 
@@ -268,21 +276,24 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
       _addConstructorParam(
           buffer: buffer,
           param: param,
-          fields: fieldNames
+          fields: fieldNames,
+          value: param.name == fieldName
+              ? fieldValue
+              : '$valueVar.${param.name}'
       );
     }
 
-    buffer.writeln(');');
-    buffer.writeln('}');
+    buffer.writeln(')');
 
     return buffer.toString();
   }
 
-  /// Emit code to [buffer] for a field parameter in the _copyWith method.
+  /// Emit code to [buffer] for a field parameter.
   void _addConstructorParam({
     required StringBuffer buffer,
     required ParameterElement param,
     required Set<String> fields,
+    required String value,
   }) {
     if (param.isInitializingFormal && param is FieldFormalParameterElement) {
       final field = param.field!;
@@ -296,19 +307,15 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
         buffer.write('$name: ');
       }
 
-      if (fields.contains(name)) {
-        buffer.writeln('$name ?? \$instance.$name,');
-      }
-      else {
-        buffer.writeln('\$instance.$name,');
-      }
+      buffer.writeln('$value,');
     }
     else if (param.isSuperFormal && param is SuperFormalParameterElement) {
       if (param.superConstructorParameter != null) {
         _addConstructorParam(
             buffer: buffer,
             param: param.superConstructorParameter!,
-            fields: fields
+            fields: fields,
+            value: value
         );
       }
     }

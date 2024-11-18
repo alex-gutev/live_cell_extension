@@ -28,26 +28,23 @@ class _$ValueCellPropKeyWrapper1 {
 
 /// Extends MutableCell with accessors for Wrapper1 properties
 extension Wrapper1MutableCellExtension<T> on MutableCell<Wrapper1<T>> {
-  static Wrapper1 _copyWith(
-    Wrapper1 $instance, {
-    T? wrappedValue,
-    int? wrapperId,
-  }) {
-    return Wrapper1(
-      wrappedValue: wrappedValue ?? $instance.wrappedValue,
-      wrapperId: wrapperId ?? $instance.wrapperId,
-    );
-  }
-
   MutableCell<T> get wrappedValue =>
       mutableApply((value) => value.wrappedValue, (p) {
-        value = _copyWith(value, wrappedValue: p);
+        final $value = value;
+        value = Wrapper1(
+          wrappedValue: p,
+          wrapperId: $value.wrapperId,
+        );
       },
           key: _$MutableCellPropKeyWrapper1(this, #wrappedValue),
           changesOnly: true);
   MutableCell<int> get wrapperId =>
       mutableApply((value) => value.wrapperId, (p) {
-        value = _copyWith(value, wrapperId: p);
+        final $value = value;
+        value = Wrapper1(
+          wrappedValue: $value.wrappedValue,
+          wrapperId: p,
+        );
       },
           key: _$MutableCellPropKeyWrapper1(this, #wrapperId),
           changesOnly: true);
@@ -108,26 +105,23 @@ class _$ValueCellPropKeyWrapper2 {
 /// Extends MutableCell with accessors for Wrapper2 properties
 extension Wrapper2MutableCellExtension<T extends List<dynamic>>
     on MutableCell<Wrapper2<T>> {
-  static Wrapper2 _copyWith(
-    Wrapper2 $instance, {
-    T? wrappedValue,
-    int? wrapperId,
-  }) {
-    return Wrapper2(
-      wrappedValue: wrappedValue ?? $instance.wrappedValue,
-      wrapperId: wrapperId ?? $instance.wrapperId,
-    );
-  }
-
   MutableCell<T> get wrappedValue =>
       mutableApply((value) => value.wrappedValue, (p) {
-        value = _copyWith(value, wrappedValue: p);
+        final $value = value;
+        value = Wrapper2(
+          wrappedValue: p,
+          wrapperId: $value.wrapperId,
+        );
       },
           key: _$MutableCellPropKeyWrapper2(this, #wrappedValue),
           changesOnly: true);
   MutableCell<int> get wrapperId =>
       mutableApply((value) => value.wrapperId, (p) {
-        value = _copyWith(value, wrapperId: p);
+        final $value = value;
+        value = Wrapper2(
+          wrappedValue: $value.wrappedValue,
+          wrapperId: p,
+        );
       },
           key: _$MutableCellPropKeyWrapper2(this, #wrapperId),
           changesOnly: true);
@@ -188,26 +182,23 @@ class _$ValueCellPropKeyWrapper3 {
 /// Extends MutableCell with accessors for Wrapper3 properties
 extension Wrapper3MutableCellExtension<T extends List<dynamic>?>
     on MutableCell<Wrapper3<T>> {
-  static Wrapper3 _copyWith(
-    Wrapper3 $instance, {
-    T? wrappedValue,
-    int? wrapperId,
-  }) {
-    return Wrapper3(
-      wrappedValue: wrappedValue ?? $instance.wrappedValue,
-      wrapperId: wrapperId ?? $instance.wrapperId,
-    );
-  }
-
   MutableCell<T> get wrappedValue =>
       mutableApply((value) => value.wrappedValue, (p) {
-        value = _copyWith(value, wrappedValue: p);
+        final $value = value;
+        value = Wrapper3(
+          wrappedValue: p,
+          wrapperId: $value.wrapperId,
+        );
       },
           key: _$MutableCellPropKeyWrapper3(this, #wrappedValue),
           changesOnly: true);
   MutableCell<int> get wrapperId =>
       mutableApply((value) => value.wrapperId, (p) {
-        value = _copyWith(value, wrapperId: p);
+        final $value = value;
+        value = Wrapper3(
+          wrappedValue: $value.wrappedValue,
+          wrapperId: p,
+        );
       },
           key: _$MutableCellPropKeyWrapper3(this, #wrapperId),
           changesOnly: true);
@@ -271,34 +262,36 @@ class _$ValueCellPropKeyWrapper4 {
 /// Extends MutableCell with accessors for Wrapper4 properties
 extension Wrapper4MutableCellExtension<T extends Object,
     U extends List<dynamic>> on MutableCell<Wrapper4<T, U>> {
-  static Wrapper4 _copyWith(
-    Wrapper4 $instance, {
-    T? wrappedValue1,
-    U? wrappedValue2,
-    int? wrapperId,
-  }) {
-    return Wrapper4(
-      wrappedValue1: wrappedValue1 ?? $instance.wrappedValue1,
-      wrappedValue2: wrappedValue2 ?? $instance.wrappedValue2,
-      wrapperId: wrapperId ?? $instance.wrapperId,
-    );
-  }
-
   MutableCell<T> get wrappedValue1 =>
       mutableApply((value) => value.wrappedValue1, (p) {
-        value = _copyWith(value, wrappedValue1: p);
+        final $value = value;
+        value = Wrapper4(
+          wrappedValue1: p,
+          wrappedValue2: $value.wrappedValue2,
+          wrapperId: $value.wrapperId,
+        );
       },
           key: _$MutableCellPropKeyWrapper4(this, #wrappedValue1),
           changesOnly: true);
   MutableCell<U> get wrappedValue2 =>
       mutableApply((value) => value.wrappedValue2, (p) {
-        value = _copyWith(value, wrappedValue2: p);
+        final $value = value;
+        value = Wrapper4(
+          wrappedValue1: $value.wrappedValue1,
+          wrappedValue2: p,
+          wrapperId: $value.wrapperId,
+        );
       },
           key: _$MutableCellPropKeyWrapper4(this, #wrappedValue2),
           changesOnly: true);
   MutableCell<int> get wrapperId =>
       mutableApply((value) => value.wrapperId, (p) {
-        value = _copyWith(value, wrapperId: p);
+        final $value = value;
+        value = Wrapper4(
+          wrappedValue1: $value.wrappedValue1,
+          wrappedValue2: $value.wrappedValue2,
+          wrapperId: p,
+        );
       },
           key: _$MutableCellPropKeyWrapper4(this, #wrapperId),
           changesOnly: true);
