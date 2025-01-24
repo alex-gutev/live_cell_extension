@@ -92,8 +92,19 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
         spec: spec,
         className: element.name,
         fields: fields,
-        types: element.typeParameters
+        types: element.typeParameters,
+        nullable: false
     ));
+
+    if (spec.nullable) {
+      buffer.write(_generateCellExtension(
+          spec: spec,
+          className: element.name,
+          fields: fields,
+          types: element.typeParameters,
+          nullable: true
+      ));
+    }
 
     if (spec.mutable) {
       final mutableFields = _filterReservedFields(
@@ -128,14 +139,16 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
     required _CellExtensionSpec spec,
     required String className,
     required List<FieldElement> fields,
-    required List<TypeParameterElement> types
+    required List<TypeParameterElement> types,
+    required bool nullable
   }) {
     final buffer = StringBuffer();
 
-    final extensionName = spec.name ?? '${className}CellExtension';
-    final keyClass = '_\$ValueCellPropKey$className';
+    final nullNameSuffix = nullable ? 'N' : '';
+    final extensionName = '${spec.name ?? '${className}CellExtension'}$nullNameSuffix';
+    final keyClass = '_\$ValueCellPropKey$className$nullNameSuffix';
 
-    final nullSuffix = spec.nullable ? '?' : '';
+    final nullSuffix = nullable ? '?' : '';
 
     final typeParams = types.isNotEmpty
         ? '<${types.map((e) => e.getDisplayString(withNullability: true)).join(',')}>'
@@ -152,7 +165,7 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
       buffer.writeln(_generateCellAccessor(
           field: field,
           keyClass: keyClass,
-          nullable: spec.nullable
+          nullable: nullable
       ));
     }
 
