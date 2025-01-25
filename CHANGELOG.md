@@ -1,3 +1,7 @@
+## 0.5.11
+
+Fix issue with nullable extension generations.
+
 ## 0.5.10
 
 Fix issue with assigning null values to generated property cells.
