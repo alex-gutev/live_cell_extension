@@ -8,12 +8,12 @@ import 'package:source_gen_test/annotations.dart';
 @ShouldGenerate(
     r'''
 /// Extends ValueCell with accessors for Person properties
-extension PersonCellExtension on ValueCell<Person?> {
-  ValueCell<String?> get name =>
-      apply((value) => value?.name, key: _$ValueCellPropKeyPerson(this, #name))
+extension PersonCellExtension on ValueCell<Person> {
+  ValueCell<String> get name =>
+      apply((value) => value.name, key: _$ValueCellPropKeyPerson(this, #name))
           .store(changesOnly: true);
   ValueCell<int?> get age =>
-      apply((value) => value?.age, key: _$ValueCellPropKeyPerson(this, #age))
+      apply((value) => value.age, key: _$ValueCellPropKeyPerson(this, #age))
           .store(changesOnly: true);
 }
 
@@ -24,6 +24,29 @@ class _$ValueCellPropKeyPerson {
   @override
   bool operator ==(other) =>
       other is _$ValueCellPropKeyPerson &&
+      _cell == other._cell &&
+      _prop == other._prop;
+  @override
+  int get hashCode => Object.hash(runtimeType, _cell, _prop);
+}
+
+/// Extends ValueCell with accessors for Person properties
+extension PersonCellExtensionN on ValueCell<Person?> {
+  ValueCell<String?> get name =>
+      apply((value) => value?.name, key: _$ValueCellPropKeyPersonN(this, #name))
+          .store(changesOnly: true);
+  ValueCell<int?> get age =>
+      apply((value) => value?.age, key: _$ValueCellPropKeyPersonN(this, #age))
+          .store(changesOnly: true);
+}
+
+class _$ValueCellPropKeyPersonN {
+  final ValueCell _cell;
+  final Symbol _prop;
+  _$ValueCellPropKeyPersonN(this._cell, this._prop);
+  @override
+  bool operator ==(other) =>
+      other is _$ValueCellPropKeyPersonN &&
       _cell == other._cell &&
       _prop == other._prop;
   @override
