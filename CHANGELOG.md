@@ -1,3 +1,9 @@
+## 0.6.1
+
+Fixes:
+
+* Update unit tests.
+
 ## 0.6.0
 
 New features:
