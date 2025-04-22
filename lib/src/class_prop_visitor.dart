@@ -5,6 +5,15 @@ import 'package:analyzer/dart/element/visitor.dart';
 
 /// Visits a class and extracts information about its properties
 class ClassPropVisitor extends SimpleElementVisitor<void> {
+  /// If true only publicly accessible properties are included in [fields].
+  final bool publicOnly;
+
+  /// If true only properties without a setter are included in [fields].
+  final bool immutableOnly;
+
+  /// If true synthetic properties are included in [fields].
+  final bool includeSynthetic;
+
   /// The properties of the class which can be accessed
   UnmodifiableListView<FieldElement> get fields =>
       UnmodifiableListView(_fields);
@@ -20,6 +29,12 @@ class ClassPropVisitor extends SimpleElementVisitor<void> {
   final List<FieldElement> _mutableFields =[];
 
   ConstructorElement? _constructor;
+
+  ClassPropVisitor({
+    this.publicOnly = true,
+    this.immutableOnly = true,
+    this.includeSynthetic = true
+  });
 
   @override
   void visitConstructorElement(ConstructorElement element) {
@@ -48,7 +63,10 @@ class ClassPropVisitor extends SimpleElementVisitor<void> {
 
   @override
   void visitFieldElement(FieldElement element) {
-    if (element.isPublic && element.setter == null && !element.isStatic) {
+    if ((!publicOnly || element.isPublic) &&
+        (!immutableOnly || element.setter == null) &&
+        (includeSynthetic || !element.isSynthetic)
+        && !element.isStatic) {
       _fields.add(element);
     }
   }

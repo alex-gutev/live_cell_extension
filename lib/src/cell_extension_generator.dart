@@ -6,6 +6,7 @@ import 'package:live_cell_annotations/live_cell_annotations.dart';
 import 'package:source_gen/source_gen.dart';
 
 import 'class_prop_visitor.dart';
+import 'data_class_generator.dart';
 
 /// Generates extensions on [ValueCell] for classes annotated with [CellExtension].
 class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
@@ -88,6 +89,7 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
     final spec = _CellExtensionSpec.parse(annotation.objectValue);
 
     final buffer = StringBuffer();
+
     buffer.write(_generateCellExtension(
         spec: spec,
         className: element.name,
@@ -129,6 +131,10 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
           constructor: visitor.constructor!,
           types: element.typeParameters
       ));
+    }
+
+    if (spec.generateEquals) {
+      buffer.write(DataClassGenerator.generateEqualsHashCode(element));
     }
 
     return buffer.toString();
@@ -400,11 +406,15 @@ class _CellExtensionSpec {
   /// Should extensions on nullable types be generated?
   final bool nullable;
 
+  /// Should equals and hash code functions be generated for the annotated class?
+  final bool generateEquals;
+
   const _CellExtensionSpec({
     required this.name,
     required this.mutableName,
     required this.mutable,
-    required this.nullable
+    required this.nullable,
+    required this.generateEquals
   });
 
   /// Parse the encoded annotation from [object].
@@ -412,6 +422,7 @@ class _CellExtensionSpec {
       name: object.getField('name')?.toSymbolValue(),
       mutableName: object.getField('mutableName')?.toSymbolValue(),
       mutable: object.getField('mutable')?.toBoolValue() ?? false,
-      nullable: object.getField('nullable')?.toBoolValue() ?? false
+      nullable: object.getField('nullable')?.toBoolValue() ?? false,
+      generateEquals: object.getField('generateEquals')?.toBoolValue() ?? true
   );
 }

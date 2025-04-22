@@ -8,7 +8,12 @@ builders:
   live_cell_extension:
     target: ":live_cell_extension" # Generator name
     import: "package:live_cell_extension/live_cell_extension.dart"
-    builder_factories: ["generateCellExtension", "generateCellWidgets", "generateValueExtensions"] # Builder name(BuilderOption) this is a definition
+    builder_factories: [
+      "generateCellExtension",
+      "generateDataClass",
+      "generateCellWidgets",
+      "generateValueExtensions"
+    ] # Builder name(BuilderOption) this is a definition
     build_extensions: { ".dart": [".g.part"] }
     auto_apply: dependents
     build_to: cache
