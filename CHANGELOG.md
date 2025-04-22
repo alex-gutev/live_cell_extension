@@ -1,3 +1,35 @@
+## 0.6.0
+
+New features:
+
+* Generator for `DataClass` annotations:
+
+  This generates comparator and hash functions for an annotated class:
+
+  ```dart
+  @DataClass()
+  class Point {
+    final int x;
+    final int y;
+  
+    ...
+  
+    @override
+    bool operator ==(Object other) =>
+      _$PointEquals(this, other);
+  
+    @override
+    int get hashCode => _$PointEquals(this); 
+  }
+  ```
+  
+  Additionally the `CellExtension` by default also generates the comparator
+  and hash functions.
+
+Other changes:
+
+* Update example.
+
 ## 0.5.11
 
 Fix issue with nullable extension generations.
