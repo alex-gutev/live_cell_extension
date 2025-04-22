@@ -77,6 +77,22 @@ class _$MutableCellPropKeyPerson {
   @override
   int get hashCode => Object.hash(runtimeType, _cell, _prop);
 }
+
+bool _$PersonEquals(Person a, Object b) =>
+    identical(a, b) ||
+    (b is Person &&
+        a.firstName == b.firstName &&
+        a.lastName == b.lastName &&
+        a.age == b.age &&
+        a.address == b.address &&
+        a._id == b._id);
+int _$PersonHashCode(Person o) => Object.hashAll([
+      o.firstName,
+      o.lastName,
+      o.age,
+      o.address,
+      o._id,
+    ]);
 '''
 )
 @CellExtension(mutable: true)

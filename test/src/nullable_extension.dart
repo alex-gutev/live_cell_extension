@@ -51,6 +51,13 @@ class _$ValueCellPropKeyPersonN {
   @override
   int get hashCode => Object.hash(runtimeType, _cell, _prop);
 }
+
+bool _$PersonEquals(Person a, Object b) =>
+    identical(a, b) || (b is Person && a.name == b.name && a.age == b.age);
+int _$PersonHashCode(Person o) => Object.hashAll([
+      o.name,
+      o.age,
+    ]);
 '''
 )
 class Person {

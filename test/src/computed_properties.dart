@@ -33,6 +33,26 @@ class _$ValueCellPropKeyPerson {
   @override
   int get hashCode => Object.hash(runtimeType, _cell, _prop);
 }
+
+bool _$PersonEquals(Person a, Object b) =>
+    identical(a, b) ||
+    (b is Person &&
+        a.firstName == b.firstName &&
+        a.lastName == b.lastName &&
+        a.age == b.age &&
+        a.address == b.address &&
+        a._id == b._id &&
+        a.value == b.value &&
+        a.previous == b.previous);
+int _$PersonHashCode(Person o) => Object.hashAll([
+      o.firstName,
+      o.lastName,
+      o.age,
+      o.address,
+      o._id,
+      o.value,
+      o.previous,
+    ]);
 ''',
   expectedLogItems: [
     'value is reserved for ValueCell properties. Accessor not generated.',

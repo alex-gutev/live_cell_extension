@@ -29,6 +29,13 @@ class _$ValueCellPropKeyMyClass {
   @override
   int get hashCode => Object.hash(runtimeType, _cell, _prop);
 }
+
+bool _$MyClassEquals(MyClass a, Object b) =>
+    identical(a, b) || (b is MyClass && a.a == b.a && a.b == b.b);
+int _$MyClassHashCode(MyClass o) => Object.hashAll([
+      o.a,
+      o.b,
+    ]);
 '''
 )
 @CellExtension()

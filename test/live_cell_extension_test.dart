@@ -1,4 +1,5 @@
 import 'package:live_cell_extension/src/cell_extension_generator.dart';
+import 'package:live_cell_extension/src/data_class_generator.dart';
 import 'package:source_gen_test/source_gen_test.dart';
 
 Future<void> main() async {
@@ -82,5 +83,13 @@ Future<void> main() async {
         'generic_classes.dart'
     ),
     CellExtensionGenerator(),
+  );
+
+  testAnnotatedElements(
+    await initializeLibraryReaderForDirectory(
+      'test/src',
+      'data_class.dart'
+    ),
+    DataClassGenerator()
   );
 }

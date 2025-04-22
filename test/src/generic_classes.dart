@@ -62,6 +62,16 @@ class _$MutableCellPropKeyWrapper1 {
   @override
   int get hashCode => Object.hash(runtimeType, _cell, _prop);
 }
+
+bool _$Wrapper1Equals(Wrapper1 a, Object b) =>
+    identical(a, b) ||
+    (b is Wrapper1 &&
+        a.wrappedValue == b.wrappedValue &&
+        a.wrapperId == b.wrapperId);
+int _$Wrapper1HashCode(Wrapper1 o) => Object.hashAll([
+      o.wrappedValue,
+      o.wrapperId,
+    ]);
 '''
 )
 @CellExtension(mutable: true)
@@ -139,6 +149,16 @@ class _$MutableCellPropKeyWrapper2 {
   @override
   int get hashCode => Object.hash(runtimeType, _cell, _prop);
 }
+
+bool _$Wrapper2Equals(Wrapper2 a, Object b) =>
+    identical(a, b) ||
+    (b is Wrapper2 &&
+        a.wrappedValue == b.wrappedValue &&
+        a.wrapperId == b.wrapperId);
+int _$Wrapper2HashCode(Wrapper2 o) => Object.hashAll([
+      o.wrappedValue,
+      o.wrapperId,
+    ]);
 '''
 )
 @CellExtension(mutable: true)
@@ -216,6 +236,16 @@ class _$MutableCellPropKeyWrapper3 {
   @override
   int get hashCode => Object.hash(runtimeType, _cell, _prop);
 }
+
+bool _$Wrapper3Equals(Wrapper3 a, Object b) =>
+    identical(a, b) ||
+    (b is Wrapper3 &&
+        a.wrappedValue == b.wrappedValue &&
+        a.wrapperId == b.wrapperId);
+int _$Wrapper3HashCode(Wrapper3 o) => Object.hashAll([
+      o.wrappedValue,
+      o.wrapperId,
+    ]);
 '''
 )
 @CellExtension(mutable: true)
@@ -309,6 +339,18 @@ class _$MutableCellPropKeyWrapper4 {
   @override
   int get hashCode => Object.hash(runtimeType, _cell, _prop);
 }
+
+bool _$Wrapper4Equals(Wrapper4 a, Object b) =>
+    identical(a, b) ||
+    (b is Wrapper4 &&
+        a.wrappedValue1 == b.wrappedValue1 &&
+        a.wrappedValue2 == b.wrappedValue2 &&
+        a.wrapperId == b.wrapperId);
+int _$Wrapper4HashCode(Wrapper4 o) => Object.hashAll([
+      o.wrappedValue1,
+      o.wrappedValue2,
+      o.wrapperId,
+    ]);
 '''
 )
 @CellExtension(mutable: true)
