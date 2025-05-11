@@ -256,6 +256,10 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
 
     final suffix = optional ? '?' : '';
 
+    if (prop.isActionCell) {
+      return 'ActionCell$suffix';
+    }
+
     final cell = prop.mutable
         ? 'MutableCell' : prop.meta
         ? 'MetaCell' : 'ValueCell';
@@ -594,6 +598,9 @@ class _WidgetProperty {
   /// Is this a cell property
   final bool isCell;
 
+  /// Is this property an ActionCell?
+  final bool isActionCell;
+
   _WidgetProperty({
     required this.name,
     required this.type,
@@ -601,6 +608,7 @@ class _WidgetProperty {
     required this.mutable,
     required this.meta,
     required this.isCell,
+    this.isActionCell = false,
     this.defaultValue,
     this.documentation
   });
@@ -627,6 +635,7 @@ class _WidgetProperty {
         mutable: mutable,
         meta: meta,
         isCell: true,
+        isActionCell: type is VoidType && mutable,
         defaultValue: defaultValue,
         documentation: documentation
     );
