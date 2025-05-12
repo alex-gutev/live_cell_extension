@@ -1,3 +1,9 @@
+## 0.6.2
+
+No new user facing features.
+
+* Updates to widget class generator
+
 ## 0.6.1
 
 Fixes:
