@@ -60,26 +60,156 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
 
     for (final spec in specs) {
       final widgetSpec = _WidgetClassSpec.parse(spec);
-      buffer.write(_generateCellWidget(widgetSpec));
+
+      _generateWidgetClasses(
+          spec: widgetSpec,
+          buffer: buffer
+      );
     }
 
     return buffer.toString();
   }
 
-  /// Generate a wrapper for a widget defined as per [spec]..
-  String _generateCellWidget(_WidgetClassSpec spec) {
+  /// Generate the widget classes for each constructor of a widget
+  ///
+  /// The class are generated according to the widget [spec] with the code
+  /// written to [buffer].
+  void _generateWidgetClasses({
+    required _WidgetClassSpec spec,
+    required StringBuffer buffer
+  }) {
     final widgetClass = spec.widgetClass;
 
     final className = widgetClass.getDisplayString(withNullability: false)
         .replaceAll(RegExp(r'<(.*)>'), '');
 
-    final genName = spec.genName ?? 'Cell$className';
+    final genName = spec.genName ?? 'Live$className';
+
+    final defaultConstructor = widgetClass.constructors
+        .firstWhere((e) => e.name.isEmpty);
+
+    final supers = defaultConstructor.parameters
+        .where((p) => p.isSuperFormal)
+        .map((p) => p.name)
+        .toSet();
+
+    if (widgetClass.constructors.length == 1) {
+      buffer.writeln(
+          _generateCellWidget(
+            spec: spec,
+            constructor: widgetClass.constructors.first,
+            genName: genName,
+            baseClass: spec.baseClass,
+            soleClass: true,
+            supers: supers
+          )
+      );
+    }
+    else {
+      _generateBaseClass(
+          spec: spec,
+          genName: genName,
+          buffer: buffer,
+          supers: supers
+      );
+
+      final typeArgs = spec.typeArguments.isNotEmpty
+          ? '<${spec.typeArguments.join(',')}>'
+          : '';
+
+      for (final constructor in widgetClass.constructors) {
+        final cname = constructor.name.isEmpty ? '' : '\$${constructor.name}';
+        buffer.writeln(
+            _generateCellWidget(
+                spec: spec,
+                constructor: constructor,
+                genName: '_$genName$cname',
+                baseClass: '$genName$typeArgs',
+                soleClass: false,
+                supers: supers
+            )
+        );
+      }
+    }
+  }
+
+  /// Generate the widget base class with a factory constructor for each constructor.
+  void _generateBaseClass({
+    required _WidgetClassSpec spec,
+    required String genName,
+    required StringBuffer buffer,
+    required Set<String> supers,
+  }) {
+    final widgetClass = spec.widgetClass;
+
+    final className = widgetClass.getDisplayString(withNullability: false)
+        .replaceAll(RegExp(r'<(.*)>'), '');
+
+    final typeArgs = spec.typeArguments.isNotEmpty
+        ? '<${spec.typeArguments.join(',')}>'
+        : '';
+
+    if (spec.documentation != null) {
+      buffer.writeln(_makeDocComment(spec.documentation!));
+    }
+    else {
+      buffer.writeln(_makeDefaultDocComment(className));
+    }
+
+    if (spec.deprecationNotice != null) {
+      buffer.writeln('@Deprecated("${spec.deprecationNotice}")');
+    }
+
+    buffer.writeln('abstract class $genName$typeArgs extends ${spec.baseClass} {');
+
+    for (final constructor in widgetClass.constructors) {
+      buffer.write('const factory $genName');
+
+      if (constructor.name.isNotEmpty) {
+        buffer.write('.${constructor.name}');
+      }
+
+      final props = <_WidgetProperty>[];
+      _generateConstructorArgs(
+          buffer: buffer,
+          constructor: constructor,
+          hasSuperKey: false,
+          spec: spec,
+          properties: props,
+          supers: supers,
+          isFactory: true
+      );
+
+      if (constructor.name.isEmpty) {
+        buffer.writeln(' = _$genName$typeArgs;');
+      }
+      else {
+        buffer.writeln(' = _$genName\$${constructor.name}$typeArgs;');
+      }
+    }
+
+    buffer.writeln('const $genName._internal({super.key});');
+
+    buffer.writeln('}');
+  }
+
+  /// Generate a wrapper for a widget defined as per [spec].
+  String _generateCellWidget({
+    required _WidgetClassSpec spec,
+    required ConstructorElement constructor,
+    required String genName,
+    required String baseClass,
+    required bool soleClass,
+    required Set<String> supers
+  }) {
+    final widgetClass = spec.widgetClass;
+
+    final className = widgetClass.getDisplayString(withNullability: false)
+        .replaceAll(RegExp(r'<(.*)>'), '');
+
     final buffer = StringBuffer();
 
     final props = <_WidgetProperty>[];
-
-    final constructor = widgetClass.constructors
-        .firstWhere((element) => element.name.isEmpty);
 
     final typeArgs = spec.typeArguments.isNotEmpty
         ? '<${spec.typeArguments.join(',')}>'
@@ -104,20 +234,19 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
         ? 'implements ${spec.interfaces.join(',')}'
         : '';
 
-    buffer.writeln('class $genName$typeArgs extends ${spec.baseClass} $mixins $interfaces {');
+    buffer.writeln('class $genName$typeArgs extends $baseClass $mixins $interfaces {');
 
     buffer.write(_generateConstructor(
         className: genName, 
         constructor: constructor, 
         properties: props, 
-        spec: spec
+        spec: spec,
+        soleClass: soleClass,
+        supers: supers
     ));
     
     buffer.writeln();
     buffer.write(_generateProperties(props));
-
-    buffer.writeln();
-    buffer.write(_generateBindMethod(genName, props));
 
     if (spec.stateMixins.isNotEmpty) {
       final mixins = spec.stateMixins.join(',');
@@ -136,7 +265,8 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
         spec: spec,
         constructor: constructor,
         properties: props,
-        isStatefulWidget: spec.stateMixins.isNotEmpty
+        isStatefulWidget: spec.stateMixins.isNotEmpty,
+        supers: supers
     ));
 
     buffer.writeln('}');
@@ -154,12 +284,52 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
     required String className, 
     required ConstructorElement constructor, 
     required List<_WidgetProperty> properties,
-    required _WidgetClassSpec spec
+    required _WidgetClassSpec spec,
+    required bool soleClass,
+    required Set<String> supers
   }) {
     final buffer = StringBuffer();
 
-    buffer.writeln('const ${className}({');
-    buffer.writeln('super.key,');
+    buffer.writeln('const $className');
+
+    _generateConstructorArgs(
+        buffer: buffer,
+        constructor: constructor,
+        hasSuperKey: soleClass,
+        spec: spec,
+        properties: properties,
+        supers: supers,
+        isFactory: false
+    );
+
+    if (soleClass) {
+      buffer.writeln(';');
+    }
+    else {
+      buffer.writeln(': super._internal(key: key);');
+    }
+
+    return buffer.toString();
+  }
+
+  /// Generate the argument list for a constructor
+  void _generateConstructorArgs({
+    required StringBuffer buffer,
+    required ConstructorElement constructor,
+    required bool hasSuperKey,
+    required bool isFactory,
+    required _WidgetClassSpec spec,
+    required List<_WidgetProperty> properties,
+    required Set<String> supers
+  }) {
+    buffer.writeln('({');
+
+    if (hasSuperKey) {
+      buffer.writeln('super.key,');
+    }
+    else {
+      buffer.writeln('Key? key,');
+    }
 
     for (final prop in spec.addProperties) {
       properties.add(prop);
@@ -168,10 +338,15 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
         buffer.write('required ');
       }
 
-      buffer.write('this.${prop.name}');
+      if (isFactory) {
+        buffer.write('${_cellPropType(prop, prop.optional)} ${prop.name}');
+      }
+      else {
+        buffer.write('this.${prop.name}');
 
-      if (prop.defaultValue != null) {
-        buffer.write(' = const ValueCell.value(${prop.defaultValue})');
+        if (prop.defaultValue != null) {
+          buffer.write(' = const ValueCell.value(${prop.defaultValue})');
+        }
       }
 
       buffer.writeln(',');
@@ -179,7 +354,8 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
 
     for (final param in constructor.parameters) {
       if (spec.excludeProperties.contains(param.name) ||
-          (param.isSuperFormal && !spec.includeSuperProperties.contains(param.name))) {
+          (supers.contains(param.name) &&
+              !spec.includeSuperProperties.contains(param.name))) {
         continue;
       }
 
@@ -190,7 +366,7 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
       final nullable = [NullabilitySuffix.question, NullabilitySuffix.star]
           .contains(param.type.nullabilitySuffix);
 
-      properties.add(_WidgetProperty(
+      final prop = _WidgetProperty(
           name: param.name,
           type: spec.propertyTypes[param.name]
               ?? param.type.getDisplayString(withNullability: nullable),
@@ -198,32 +374,37 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
           mutable: spec.mutableProperties.contains(param.name),
           meta: false,
           isCell: spec.isCellProperty(param.name)
-      ));
+      );
+
+      properties.add(prop);
 
       if (param.isRequired) {
         buffer.write('required ');
       }
 
-      buffer.write('this.${param.name}');
+      if (isFactory) {
+        buffer.write('${_cellPropType(prop, prop.optional)} ${prop.name}');
+      }
+      else {
+        buffer.write('this.${param.name}');
 
-      if (hasDefault) {
-        final defaultValue = spec.propertyDefaultValues[param.name]
-            ?? param.defaultValueCode;
+        if (hasDefault) {
+          final defaultValue = spec.propertyDefaultValues[param.name]
+              ?? param.defaultValueCode;
 
-        if (!spec.isCellProperty(param.name)) {
-          buffer.write(' = $defaultValue');
-        }
-        else {
-          buffer.write(' = const ValueCell.value($defaultValue)');
+          if (!spec.isCellProperty(param.name)) {
+            buffer.write(' = $defaultValue');
+          }
+          else {
+            buffer.write(' = const ValueCell.value($defaultValue)');
+          }
         }
       }
 
       buffer.writeln(',');
     }
 
-    buffer.writeln('});');
-
-    return buffer.toString();
+    buffer.write('})');
   }
 
   /// Generate the code defining the properties of the wrapper class.
@@ -276,6 +457,7 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
     required ConstructorElement constructor,
     required List<_WidgetProperty> properties,
     required bool isStatefulWidget,
+    required Set<String> supers
   }) {
     final buffer = StringBuffer();
     final className = spec.widgetClass.getDisplayString(withNullability: false);
@@ -287,12 +469,17 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
       buffer.writeln('return CellWidget.builder((context) {');
     }
 
-    buffer.writeln('return $className(');
+    if (constructor.name.isEmpty) {
+      buffer.writeln('return $className(');
+    }
+    else {
+      buffer.writeln('return $className.${constructor.name}(');
+    }
 
     for (final param in constructor.parameters) {
       if (!spec.propertyValues.containsKey(param.name) &&
           (spec.excludeProperties.contains(param.name) ||
-              (param.isSuperFormal &&
+              (supers.contains(param.name) &&
                   !spec.includeSuperProperties.contains(param.name)))) {
         continue;
       }
