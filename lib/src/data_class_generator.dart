@@ -1,9 +1,11 @@
 import 'package:analyzer/dart/constant/value.dart';
-import 'package:analyzer/dart/element/element.dart';
+import 'package:analyzer/dart/element/element2.dart';
 import 'package:build/build.dart';
+import 'package:code_builder/code_builder.dart';
 import 'package:live_cell_annotations/live_cell_annotations.dart';
-import 'package:live_cell_extension/src/class_prop_visitor.dart';
 import 'package:source_gen/source_gen.dart';
+
+import 'class_prop_visitor.dart';
 
 /// Generates hashCode and equals functions for classes annotates with [DataClass].
 class DataClassGenerator extends GeneratorForAnnotation<DataClass> {
@@ -13,8 +15,8 @@ class DataClassGenerator extends GeneratorForAnnotation<DataClass> {
   };
 
   @override
-  String generateForAnnotatedElement(Element element, ConstantReader annotation, BuildStep buildStep) {
-    if (element is! ClassElement) {
+  String generateForAnnotatedElement(Element2 element, ConstantReader annotation, BuildStep buildStep) {
+    if (element is! ClassElement2) {
       throw InvalidGenerationSourceError(
           'The DataClass annotation is only applicable to classes.',
           todo: 'Remove the DataClass annotation',
@@ -26,90 +28,118 @@ class DataClassGenerator extends GeneratorForAnnotation<DataClass> {
   }
   
   /// Generate the equals and hashCode functions for a given class [element].
-  static String generateEqualsHashCode(ClassElement element) {
+  static String generateEqualsHashCode(ClassElement2 element) {
     final visitor = ClassPropVisitor(
         publicOnly: false,
         immutableOnly: false,
         includeSynthetic: false
     );
 
-    element.visitChildren(visitor);
+    element.visitChildren2(visitor);
 
     final buffer = StringBuffer();
 
-    _generateEquals(
-        className: element.name,
+    final equals = _generateEquals(
+        className: element.name3!,
         fields: visitor.fields,
-        buffer: buffer
     );
 
-    _generateHashCode(
-        className: element.name,
+    final hash = _generateHashCode(
+        className: element.name3!,
         fields: visitor.fields,
-        buffer: buffer
     );
+
+    final emitter = DartEmitter(useNullSafetySyntax: true);
+    
+    buffer.write(equals.accept(emitter));
+    buffer.write(hash.accept(emitter));
 
     return buffer.toString();
   }
 
   /// Generate equals function.
-  static void _generateEquals({
+  static Method _generateEquals({
     required String className,
-    required List<FieldElement> fields,
-    required StringBuffer buffer
+    required List<FieldElement2> fields,
   }) {
-    buffer.write('bool _\$${className}Equals($className a, Object b) => ');
-    buffer.write('identical(a, b) || (b is $className');
+    final name = '_\$${className}Equals';
+
+    Expression comparison = refer('b').isA(refer(className));
 
     for (final field in fields) {
-      if (ignoredFields.contains(field.name)) {
+      if (ignoredFields.contains(field.name3!)) {
         continue;
       }
 
-      final name = field.name;
+      final name = field.name3!;
       final spec = _getDataFieldAnnotation(field);
 
-      if (spec?.equals != null) {
-        buffer.write('&& ${spec!.equals!.name}(a.$name, b.$name)');
-      }
-      else {
-        buffer.write('&& a.$name == b.$name');
-      }
-    }
+      final lhs = refer('a').property(name);
+      final rhs = refer('b').property(name);
+      
+      final expr = spec?.equals != null 
+          ? refer(spec!.equals!.name3!).call([lhs, rhs])
+          : lhs.equalTo(rhs);
 
-    buffer.writeln(');');
+      comparison = comparison.and(expr);
+    }
+    
+    final idCheck = refer('identical').call([refer('a'), refer('b')]);
+    final body = idCheck.or(comparison.parenthesized);
+
+    return Method((b) => b..name = name
+        ..requiredParameters.addAll([
+          Parameter((b) => b..name = 'a'
+              ..type = refer(className)
+          ),
+          Parameter((b) => b..name = 'b'
+              ..type = refer(className)
+          )
+        ])
+        ..returns = refer('bool')
+        ..body = body.code
+    );
   }
 
   /// Generate hash code function.
-  static void _generateHashCode({
+  static Method _generateHashCode({
     required String className,
-    required List<FieldElement> fields,
-    required StringBuffer buffer
+    required List<FieldElement2> fields,
   }) {
-    buffer.write('int _\$${className}HashCode($className o) => Object.hashAll([');
+    final name = '_\$${className}HashCode';
 
-    for (final field in fields) {
-      if (ignoredFields.contains(field.name)) {
-        continue;
-      }
+    final hashes = fields.where((f) => !ignoredFields.contains(f))
+        .map((field) {
+          final name = field.name3!;
+          final spec = _getDataFieldAnnotation(field);
 
-      final name = field.name;
-      final spec = _getDataFieldAnnotation(field);
+          if (spec?.hash != null) {
+            return refer(spec!.hash!.name3!).call([refer('o').property(name)]);
+          }
+          else {
+            return refer('o').property(name);
+          }
+        });
 
-      if (spec?.hash != null) {
-        buffer.write('${spec!.hash!.name}(o.$name),');
-      }
-      else {
-        buffer.write('o.$name,');
-      }
-    }
-
-    buffer.writeln(']);');
+    return Method((b) => b..name = name
+        ..requiredParameters.add(
+            Parameter((b) => b..name = 'o'
+                ..type = refer(className)
+            )
+        )
+        ..returns = refer('int')
+        ..body = refer('Object')
+            .property('hashAll')
+            .call([
+              literalList(hashes)
+            ])
+            .code
+    );
   }
 
   /// Get the [DataField] annotation applying to a given [field], if any.
-  static _DataFieldSpec? _getDataFieldAnnotation(FieldElement field) {
-    for (final annotation in field.metadata) {
+  static _DataFieldSpec? _getDataFieldAnnotation(FieldElement2 field) {
+    for (final annotation in field.metadata2.annotations) {
       final obj = annotation.computeConstantValue();
       
       if (obj != null && obj.type?.getDisplayString() == 'DataField') {
@@ -123,8 +153,8 @@ class DataClassGenerator extends GeneratorForAnnotation<DataClass> {
 
 /// Parsed [DataField] annotation
 class _DataFieldSpec {
-  final ExecutableElement? equals;
-  final ExecutableElement? hash;
+  final ExecutableElement2? equals;
+  final ExecutableElement2? hash;
 
   const _DataFieldSpec({
     required this.equals,
@@ -132,7 +162,7 @@ class _DataFieldSpec {
   });
 
   factory _DataFieldSpec.parse(DartObject object) => _DataFieldSpec(
-    equals: object.getField('equals')?.toFunctionValue(),
-    hash: object.getField('hash')?.toFunctionValue()
+    equals: object.getField('equals')?.toFunctionValue2(),
+    hash: object.getField('hash')?.toFunctionValue2()
   );
 }
