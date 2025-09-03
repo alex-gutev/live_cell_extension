@@ -112,7 +112,7 @@ class DataClassGenerator extends GeneratorForAnnotation<DataClass> {
     for (final annotation in field.metadata) {
       final obj = annotation.computeConstantValue();
       
-      if (obj != null && obj.type?.getDisplayString() == 'DataField') {
+      if (obj != null && obj.type?.getDisplayString(withNullability: false) == 'DataField') {
         return _DataFieldSpec.parse(obj);
       }
     }
