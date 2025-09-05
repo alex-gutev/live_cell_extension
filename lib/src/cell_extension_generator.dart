@@ -1,12 +1,13 @@
 import 'package:analyzer/dart/constant/value.dart';
-import 'package:analyzer/dart/element/element.dart';
-import 'package:analyzer/dart/element/nullability_suffix.dart';
+import 'package:analyzer/dart/element/element2.dart';
 import 'package:build/build.dart';
+import 'package:code_builder/code_builder.dart';
 import 'package:live_cell_annotations/live_cell_annotations.dart';
 import 'package:source_gen/source_gen.dart';
 
 import 'class_prop_visitor.dart';
 import 'data_class_generator.dart';
+import 'type_expression_visitor.dart';
 
 /// Generates extensions on [ValueCell] for classes annotated with [CellExtension].
 class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
@@ -63,8 +64,8 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
       reservedFieldNames.union(reservedMutableFieldNames);
 
   @override
-  String generateForAnnotatedElement(Element element, ConstantReader annotation, BuildStep buildStep) {
-    if (element is! ClassElement) {
+  String generateForAnnotatedElement(Element2 element, ConstantReader annotation, BuildStep buildStep) {
+    if (element is! ClassElement2) {
       throw InvalidGenerationSourceError(
         'The CellExtension annotation is only applicable to classes.',
         todo: 'Remove the CellExtension annotation',
@@ -73,14 +74,14 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
     }
 
     final visitor = ClassPropVisitor();
-    element.visitChildren(visitor);
+    element.visitChildren2(visitor);
 
     final fields = _filterReservedFields(visitor.fields);
 
     if (fields.isEmpty) {
       throw InvalidGenerationSource(
-          'No public final properties found on class ${element.name}.',
-          todo: 'Make the properties of class ${element.name} public and final'
+          'No public final properties found on class ${element.displayName}.',
+          todo: 'Make the properties of class ${element.displayName} public and final'
               ' or remove the CellExtension annotation.',
           element: element
       );
@@ -90,23 +91,23 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
 
     final buffer = StringBuffer();
 
-    buffer.write(_generateCellExtension(
-        spec: spec,
-        className: element.name,
-        fields: fields,
-        types: element.typeParameters,
-        nullable: false
-    ));
-
-    if (spec.nullable) {
-      buffer.write(_generateCellExtension(
+    final specs = [
+      ..._generateCellExtension(
           spec: spec,
-          className: element.name,
+          className: element.name3!,
           fields: fields,
-          types: element.typeParameters,
-          nullable: true
-      ));
-    }
+          types: element.typeParameters2,
+          nullable: false
+      ),
+      if (spec.nullable)
+        ..._generateCellExtension(
+            spec: spec,
+            className: element.name3!,
+            fields: fields,
+            types: element.typeParameters2,
+            nullable: true
+        )
+    ];
 
     if (spec.mutable) {
       final mutableFields = _filterReservedFields(
@@ -117,20 +118,28 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
 
       if (mutableFields.isEmpty) {
         throw InvalidGenerationSource(
-            'The constructor of class ${element.name} does not have any field formal parameters.',
-            todo: 'Add field formal parameters to the constructor of ${element.name} or '
+            'The constructor of class ${element.displayName} does not have any field formal parameters.',
+            todo: 'Add field formal parameters to the constructor of ${element.displayName} or '
                 'remove `mutable: true` from the CellExtension annotation.',
             element: element
         );
       }
 
-      buffer.write(_generateMutableCellExtension(
-          spec: spec,
-          className: element.name,
-          fields: mutableFields,
-          constructor: visitor.constructor!,
-          types: element.typeParameters
-      ));
+      specs.addAll(
+          _generateMutableCellExtension(
+              spec: spec,
+              className: element.name3!,
+              fields: mutableFields,
+              constructor: visitor.constructor!,
+              types: element.typeParameters2
+          )
+      );
+    }
+
+    final emitter = DartEmitter(useNullSafetySyntax: true);
+
+    for (final spec in specs) {
+      buffer.write(spec.accept(emitter));
     }
 
     if (spec.generateEquals) {
@@ -140,137 +149,191 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
     return buffer.toString();
   }
 
+  /// Return a [Reference] that refers to a generic type parameter declaration
+  Reference _typeParamRef(TypeParameterElement2 param) {
+    return TypeReference((b) => b..symbol = param.name3!
+        ..bound = param.bound?.accept(TypeExpressionVisitor())
+    );
+  }
+
   /// Generate a [ValueCell] extension providing accessors for [fields].
-  String _generateCellExtension({
+  List<Spec> _generateCellExtension({
     required _CellExtensionSpec spec,
     required String className,
-    required List<FieldElement> fields,
-    required List<TypeParameterElement> types,
+    required List<FieldElement2> fields,
+    required List<TypeParameterElement2> types,
     required bool nullable
   }) {
-    final buffer = StringBuffer();
-
     final nullNameSuffix = nullable ? 'N' : '';
     final extensionName = '${spec.name ?? '${className}CellExtension'}$nullNameSuffix';
     final keyClass = '_\$ValueCellPropKey$className$nullNameSuffix';
 
-    final nullSuffix = nullable ? '?' : '';
+    final extension = Extension((b) => b..name = extensionName
+        ..types.addAll(types.map((t) => _typeParamRef(t)))
+        ..on = TypeReference((b) => b..symbol = 'ValueCell'
+            ..types.add(
+              TypeReference((b) => b..symbol = className
+                  ..types.addAll(types.map((t) => refer(t.name3!)))
+                  ..isNullable = nullable
+              )
+            )
+        )
+        ..methods.addAll(
+            fields.map((f) => _generateCellAccessor(
+                field: f,
+                keyClass: keyClass,
+                nullable: nullable
+            ))
+        )
+        ..docs.add('/// Extends ValueCell with accessors for $className properties')
+    );
 
-    final typeParams = types.isNotEmpty
-        ? '<${types.map((e) => e.getDisplayString(withNullability: true)).join(',')}>'
-        : '';
-
-    final classTypeParams = types.isNotEmpty
-        ? '<${types.map((e) => e.name).join(',')}>'
-        : '';
-
-    buffer.writeln('/// Extends ValueCell with accessors for $className properties');
-    buffer.writeln('extension $extensionName$typeParams on ValueCell<$className$classTypeParams$nullSuffix> {');
-
-    for (final field in fields) {
-      buffer.writeln(_generateCellAccessor(
-          field: field,
-          keyClass: keyClass,
-          nullable: nullable
-      ));
-    }
-
-    buffer.writeln('}');
-    buffer.write(_generatePropKeyClass(keyClass));
-
-    return buffer.toString();
+    return [
+      extension,
+      _generatePropKeyClass(keyClass)
+    ];
   }
 
-  /// Generate an accessor for a class property which returns a [ValueCell] holding a [type].
-  String _generateCellAccessor({
-    required FieldElement field,
+  /// Generate a [ValueCell] accessor for a given class property.
+  Method _generateCellAccessor({
+    required FieldElement2 field,
     required String keyClass,
     required bool nullable,
   }) {
-    final name = field.name;
-    final type = field.type.getDisplayString(withNullability: false);
+    final name = field.name3!;
 
-    final nullSuffix = nullable ||
-        [NullabilitySuffix.question, NullabilitySuffix.star]
-            .contains(field.type.nullabilitySuffix)
-        ? '?'
-        : '';
+    final propType = TypeReference((b) => b..symbol = 'ValueCell'
+        ..types.add(field.type.accept(TypeExpressionVisitor(nullable: nullable)))
+    );
 
-    final nullOperator = nullable ? '?' : '';
+    final propRef = nullable
+        ? refer('value').nullSafeProperty(name)
+        : refer('value').property(name);
 
-    return 'ValueCell<$type$nullSuffix> get $name => apply('
-        '(value) => value$nullOperator.$name,'
-        'key: $keyClass(this, #$name)'
-        ').store(changesOnly: true);';
+    final accessor = Method((b) => b
+      ..lambda = true
+      ..requiredParameters.add(Parameter((b) => b..name = 'value'))
+      ..body = propRef.code
+    );
+
+    final body = refer('apply')
+        .call([
+          accessor.closure
+        ], {
+          'key': refer(keyClass).call([
+            refer('this'), refer('#$name')
+          ])
+        })
+        .property('store')
+        .call([], {'changesOnly': literalTrue});
+
+    return Method((b) => b..name = name
+        ..returns = propType
+        ..type = MethodType.getter
+        ..body = body.code
+    );
   }
 
   /// Generate a [MutableCell] extension providing accessors for [fields].
-  String _generateMutableCellExtension({
+  List<Spec> _generateMutableCellExtension({
     required _CellExtensionSpec spec,
     required String className,
-    required List<FieldElement> fields,
-    required ConstructorElement constructor,
-    required List<TypeParameterElement> types,
+    required List<FieldElement2> fields,
+    required ConstructorElement2 constructor,
+    required List<TypeParameterElement2> types,
   }) {
-    final buffer = StringBuffer();
-
     final extensionName = spec.mutableName ?? '${className}MutableCellExtension';
     final keyClass = '_\$MutableCellPropKey$className';
 
-    final typeParams = types.isNotEmpty
-        ? '<${types.map((e) => e.getDisplayString(withNullability: true)).join(',')}>'
-        : '';
+    final extension = Extension((b) => b..name = extensionName
+        ..types.addAll(types.map((t) => _typeParamRef(t)))
+        ..on = TypeReference((b) => b..symbol = 'MutableCell'
+            ..types.add(
+              TypeReference((b) => b..symbol = className
+                  ..types.addAll(types.map((t) => refer(t.name3!)))
+              )
+            )
+        )
+        ..methods.addAll(
+            fields.map((f) => _generateMutableAccessor(
+                className: className,
+                fields: fields,
+                constructor: constructor,
+                field: f,
+                keyClass: keyClass
+            ))
+        )
+        ..docs.add('/// Extends MutableCell with accessors for $className properties')
+    );
 
-    final classTypeParams = types.isNotEmpty
-        ? '<${types.map((e) => e.name).join(',')}>'
-        : '';
-
-    buffer.writeln('/// Extends MutableCell with accessors for $className properties');
-    buffer.writeln('extension $extensionName$typeParams on MutableCell<$className$classTypeParams> {');
-
-    for (final field in fields) {
-      buffer.writeln(_generateMutableAccessor(
-          className: className,
-          fields: fields,
-          constructor: constructor,
-          field: field,
-          keyClass: keyClass
-      ));
-    }
-
-    buffer.writeln('}');
-    buffer.write(_generatePropKeyClass(keyClass));
-
-    return buffer.toString();
+    return [
+      extension,
+      _generatePropKeyClass(keyClass)
+    ];
   }
 
 
-  /// Generate an accessor for a class property which returns a [MutableCell] holding a [type].
-  String _generateMutableAccessor({
+  /// Generate a [MutableCell] accessor for a given class property.
+  Method _generateMutableAccessor({
     required String className,
-    required ConstructorElement constructor,
-    required List<FieldElement> fields,
-    required FieldElement field,
+    required ConstructorElement2 constructor,
+    required List<FieldElement2> fields,
+    required FieldElement2 field,
     required String keyClass
   }) {
-    final name = field.name;
-    final type = field.type.toString();
+    final name = field.name3!;
+
+    final propType = TypeReference((b) => b..symbol = 'MutableCell'
+      ..types.add(field.type.accept(TypeExpressionVisitor()))
+    );
 
     final copy = _generateCopyConstruct(
         className: className,
         constructor: constructor,
-        fields: fields,
         fieldName: name,
         fieldValue: 'p',
         valueVar: '\$value'
     );
 
-    return 'MutableCell<$type> get $name => mutableApply('
-        '(value) => value.$name,'
-        '(p) { final \$value = value; value = $copy; },'
-        'key: $keyClass(this, #$name),'
-        'changesOnly: true'
-        ');';
+    final computeFn = Method((b) => b
+        ..lambda = true
+        ..body = refer('value')
+            .property(name)
+            .code
+    );
+
+    final reverseFn = Method((b) => b
+        ..requiredParameters.add(
+          Parameter((b) => b..name = 'p')
+        )
+        ..body = Block((b) => b..statements.addAll([
+          declareFinal('\$value')
+              .assign(refer('value'))
+              .statement,
+
+          refer('value')
+              .assign(copy)
+              .statement
+        ]))
+    );
+
+    final body = refer('mutableApply').call([
+      computeFn.closure,
+      reverseFn.closure,
+    ], {
+      'key': refer(keyClass).call([
+        refer('this'),
+        refer('#$name')
+      ]),
+
+      'changesOnly': literalTrue
+    });
+
+    return Method((b) => b..name = name
+        ..returns = propType
+        ..type = MethodType.getter
+        ..body = body.code
+    );
   }
 
   /// Generate a call to the [constructor] of [className] which copies the property values.
@@ -278,109 +341,124 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
   /// The generated code copies the values of the instance properties of the
   /// object stored in the variable [valueVar] with the exception of the
   /// property [fieldName], which is given the value [fieldValue].
-  String _generateCopyConstruct({
+  Expression _generateCopyConstruct({
     required String className,
-    required ConstructorElement constructor,
-    required List<FieldElement> fields,
+    required ConstructorElement2 constructor,
     required String fieldName,
     required String fieldValue,
     required String valueVar,
   }) {
-    final buffer = StringBuffer();
-    buffer.writeln('$className(');
-
-    final fieldNames = fields.map((f) => f.name).toSet();
-
-    for (final param in constructor.parameters) {
-      _addConstructorParam(
-          buffer: buffer,
-          param: param,
-          fields: fieldNames,
-          value: param.name == fieldName
-              ? fieldValue
-              : '$valueVar.${param.name}'
-      );
-    }
-
-    buffer.writeln(')');
-
-    return buffer.toString();
-  }
-
-  /// Emit code to [buffer] for a field parameter.
-  void _addConstructorParam({
-    required StringBuffer buffer,
-    required ParameterElement param,
-    required Set<String> fields,
-    required String value,
-  }) {
-    if (param.isInitializingFormal && param is FieldFormalParameterElement) {
-      final field = param.field!;
-      final name = field.name;
-
-      if (allReservedFieldNames.contains(name)) {
-        return;
+    FieldFormalParameterElement2 getFieldFormal(FormalParameterElement param) {
+      if (param is SuperFormalParameterElement2) {
+        return getFieldFormal(param.superConstructorParameter2!);
       }
 
-      if (param.isNamed) {
-        buffer.write('$name: ');
-      }
+      return param as FieldFormalParameterElement2;
+    }
 
-      buffer.writeln('$value,');
-    }
-    else if (param.isSuperFormal && param is SuperFormalParameterElement) {
-      if (param.superConstructorParameter != null) {
-        _addConstructorParam(
-            buffer: buffer,
-            param: param.superConstructorParameter!,
-            fields: fields,
-            value: value
-        );
-      }
-    }
+    Expression getFieldValue(FormalParameterElement param) => param.name3 == fieldName
+        ? refer(fieldValue)
+        : refer(valueVar).property(param.name3!);
+
+    final fields = constructor.formalParameters
+      .where((param) {
+        if (param.isInitializingFormal && param is FieldFormalParameterElement2) {
+          return !allReservedFieldNames.contains(param.field2?.name3);
+        }
+
+        return param.isSuperFormal &&
+            param is SuperFormalParameterElement2 &&
+            param.superConstructorParameter2 != null;
+      })
+      .map(getFieldFormal);
+
+    final named = Map.fromEntries(
+        fields.where((p) => p.isNamed)
+            .map((p) => MapEntry(p.name3!, getFieldValue(p)))
+    );
+
+    final positional = fields.where((p) => !p.isNamed)
+      .map(getFieldValue);
+
+    return refer(className).call(positional, named);
   }
 
   /// Generate a property cell key class named [name].
-  String _generatePropKeyClass(String name) {
-    final buffer = StringBuffer();
+  Class _generatePropKeyClass(String name) => Class((b) => b..name = name
+    ..constructors.add(
+      Constructor((b) => b..requiredParameters.addAll([
+        Parameter((b) => b..name = '_cell'
+          ..toThis = true
+        ),
+        Parameter((b) => b..name = '_prop'
+          ..toThis = true
+        )
+      ]))
+    )
+    ..fields.addAll([
+      Field((b) => b..name = '_cell'
+        ..type = refer('ValueCell')
+        ..modifier = FieldModifier.final$
+      ),
+      Field((b) => b..name = '_prop'
+        ..type = refer('Symbol')
+        ..modifier = FieldModifier.final$
+      )
+    ])
+    ..methods.addAll([
+      Method((b) => b..name='operator=='
+        ..requiredParameters.add(
+            Parameter((b) => b..name = 'other')
+        )
+        ..annotations.add(refer('override'))
+        ..returns = refer('bool')
+        ..body = refer('other')
+            .isA(refer(name))
+            .and(
+              refer('_cell').equalTo(
+                  refer('other').property('_cell')
+              )
+            )
+            .and(
+              refer('_prop').equalTo(
+                  refer('other').property('_prop')
+              )
+            )
+            .code
+      ),
+      Method((b) => b..name='hashCode'
+        ..type = MethodType.getter
+        ..annotations.add(refer('override'))
+        ..returns = refer('int')
+        ..body = refer('Object')
+            .property('hash')
+            .call([
+              refer('runtimeType'),
+              refer('_cell'),
+              refer('_prop')
+            ])
+            .code
+      )
+    ])
+  );
 
-    buffer.writeln('class $name {');
-    buffer.writeln('final ValueCell _cell;');
-    buffer.writeln('final Symbol _prop;');
-    buffer.writeln('$name(this._cell, this._prop);');
-
-    buffer.writeln('@override');
-    buffer.writeln(
-        'bool operator==(other) => other is $name && '
-        '_cell == other._cell && '
-        '_prop == other._prop;'
-    );
-
-    buffer.writeln('@override');
-    buffer.writeln('int get hashCode => Object.hash(runtimeType, _cell, _prop);');
-
-    buffer.writeln('}');
-    
-    return buffer.toString();
-  }
-
-  /// Remove fields which use a reserved identifier.
+  /// Remove fields that use a reserved identifier.
   ///
   /// If a field uses an identifier present in [reserved], it is removed from
   /// [fields] and a warning is emitted with [extType] naming the extended class.
   ///
   /// The filtered list is returned, [fields] is not modified.
-  static List<FieldElement> _filterReservedFields(
-      List<FieldElement> fields,
+  static List<FieldElement2> _filterReservedFields(
+      List<FieldElement2> fields,
       [Set<String> reserved = reservedFieldNames, String extType = 'ValueCell']) {
-    List<FieldElement> filtered = [];
+    List<FieldElement2> filtered = [];
 
     for (final field in fields) {
-      if (reservedObjectFieldNames.contains(field.name)) {
+      if (reservedObjectFieldNames.contains(field.name3)) {
         continue;
       }
-      else if (reserved.contains(field.name)) {
-        log.info('${field.name} is reserved for $extType properties. '
+      else if (reserved.contains(field.name3)) {
+        log.info('${field.displayName} is reserved for $extType properties. '
             'Accessor not generated.');
       }
       else {
