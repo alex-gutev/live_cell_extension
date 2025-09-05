@@ -49,10 +49,14 @@ class DataClassGenerator extends GeneratorForAnnotation<DataClass> {
         fields: visitor.fields,
     );
 
+    final lib = Library((b) => b..body.addAll([
+      equals,
+      hash
+    ]));
+
     final emitter = DartEmitter(useNullSafetySyntax: true);
-    
-    buffer.write(equals.accept(emitter));
-    buffer.write(hash.accept(emitter));
+
+    buffer.write(lib.accept(emitter));
 
     return buffer.toString();
   }
@@ -93,7 +97,7 @@ class DataClassGenerator extends GeneratorForAnnotation<DataClass> {
               ..type = refer(className)
           ),
           Parameter((b) => b..name = 'b'
-              ..type = refer(className)
+              ..type = refer('Object')
           )
         ])
         ..returns = refer('bool')
