@@ -23,11 +23,8 @@ bool _$TestDataClassEquals(TestDataClass a, Object b) =>
         a.field1 == b.field1 &&
         a.field2 == b.field2 &&
         myEqual(a.field3, b.field3));
-int _$TestDataClassHashCode(TestDataClass o) => Object.hashAll([
-      o.field1,
-      o.field2,
-      hashAll(o.field3),
-    ]);
+int _$TestDataClassHashCode(TestDataClass o) =>
+    Object.hashAll([o.field1, o.field2, hashAll(o.field3)]);
 '''
 )
 @DataClass()

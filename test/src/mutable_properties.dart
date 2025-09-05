@@ -7,81 +7,102 @@ import 'package:source_gen_test/annotations.dart';
 
 @ShouldGenerate(
     r'''
-/// Extends ValueCell with accessors for Person properties
-extension PersonCellExtension on ValueCell<Person> {
-  ValueCell<String> get firstName => apply((value) => value.firstName,
-          key: _$ValueCellPropKeyPerson(this, #firstName))
-      .store(changesOnly: true);
-  ValueCell<String> get lastName => apply((value) => value.lastName,
-          key: _$ValueCellPropKeyPerson(this, #lastName))
-      .store(changesOnly: true);
-  ValueCell<int> get age =>
-      apply((value) => value.age, key: _$ValueCellPropKeyPerson(this, #age))
-          .store(changesOnly: true);
-  ValueCell<String> get fullName => apply((value) => value.fullName,
-          key: _$ValueCellPropKeyPerson(this, #fullName))
-      .store(changesOnly: true);
+/// Extends ValueCell with accessors for Person2 properties
+extension Person2CellExtension on ValueCell<Person2> {
+  ValueCell<String> get firstName => apply(
+    (value) => value.firstName,
+    key: _$ValueCellPropKeyPerson2(this, #firstName),
+  ).store(changesOnly: true);
+  ValueCell<String> get lastName => apply(
+    (value) => value.lastName,
+    key: _$ValueCellPropKeyPerson2(this, #lastName),
+  ).store(changesOnly: true);
+  ValueCell<int> get age => apply(
+    (value) => value.age,
+    key: _$ValueCellPropKeyPerson2(this, #age),
+  ).store(changesOnly: true);
+  ValueCell<String> get fullName => apply(
+    (value) => value.fullName,
+    key: _$ValueCellPropKeyPerson2(this, #fullName),
+  ).store(changesOnly: true);
 }
 
-class _$ValueCellPropKeyPerson {
+class _$ValueCellPropKeyPerson2 {
+  _$ValueCellPropKeyPerson2(this._cell, this._prop);
+
   final ValueCell _cell;
+
   final Symbol _prop;
-  _$ValueCellPropKeyPerson(this._cell, this._prop);
+
   @override
   bool operator ==(other) =>
-      other is _$ValueCellPropKeyPerson &&
+      other is _$ValueCellPropKeyPerson2 &&
       _cell == other._cell &&
       _prop == other._prop;
+
   @override
   int get hashCode => Object.hash(runtimeType, _cell, _prop);
 }
 
-/// Extends MutableCell with accessors for Person properties
-extension PersonMutableCellExtension on MutableCell<Person> {
-  MutableCell<String> get firstName =>
-      mutableApply((value) => value.firstName, (p) {
-        final $value = value;
-        value = Person(
-          firstName: p,
-          lastName: $value.lastName,
-          age: $value.age,
-        );
-      }, key: _$MutableCellPropKeyPerson(this, #firstName), changesOnly: true);
-  MutableCell<String> get lastName =>
-      mutableApply((value) => value.lastName, (p) {
-        final $value = value;
-        value = Person(
-          firstName: $value.firstName,
-          lastName: p,
-          age: $value.age,
-        );
-      }, key: _$MutableCellPropKeyPerson(this, #lastName), changesOnly: true);
-  MutableCell<int> get age => mutableApply((value) => value.age, (p) {
-        final $value = value;
-        value = Person(
-          firstName: $value.firstName,
-          lastName: $value.lastName,
-          age: p,
-        );
-      }, key: _$MutableCellPropKeyPerson(this, #age), changesOnly: true);
+/// Extends MutableCell with accessors for Person2 properties
+extension Person2MutableCellExtension on MutableCell<Person2> {
+  MutableCell<String> get firstName => mutableApply(
+    (value) => value.firstName,
+    (p) {
+      final $value = value;
+      value = Person2(firstName: p, lastName: $value.lastName, age: $value.age);
+    },
+    key: _$MutableCellPropKeyPerson2(this, #firstName),
+    changesOnly: true,
+  );
+  MutableCell<String> get lastName => mutableApply(
+    (value) => value.lastName,
+    (p) {
+      final $value = value;
+      value = Person2(
+        firstName: $value.firstName,
+        lastName: p,
+        age: $value.age,
+      );
+    },
+    key: _$MutableCellPropKeyPerson2(this, #lastName),
+    changesOnly: true,
+  );
+  MutableCell<int> get age => mutableApply(
+    (value) => value.age,
+    (p) {
+      final $value = value;
+      value = Person2(
+        firstName: $value.firstName,
+        lastName: $value.lastName,
+        age: p,
+      );
+    },
+    key: _$MutableCellPropKeyPerson2(this, #age),
+    changesOnly: true,
+  );
 }
 
-class _$MutableCellPropKeyPerson {
+class _$MutableCellPropKeyPerson2 {
+  _$MutableCellPropKeyPerson2(this._cell, this._prop);
+
   final ValueCell _cell;
+
   final Symbol _prop;
-  _$MutableCellPropKeyPerson(this._cell, this._prop);
+
   @override
   bool operator ==(other) =>
-      other is _$MutableCellPropKeyPerson &&
+      other is _$MutableCellPropKeyPerson2 &&
       _cell == other._cell &&
       _prop == other._prop;
+
   @override
   int get hashCode => Object.hash(runtimeType, _cell, _prop);
 }
 
-bool _$PersonEquals(Person a, Object b) =>
+bool _$Person2Equals(Person2 a, Object b) =>
     identical(a, b) ||
-    (b is Person &&
+    (b is Person2 &&
         a.firstName == b.firstName &&
         a.lastName == b.lastName &&
         a.age == b.age &&
@@ -89,15 +110,15 @@ bool _$PersonEquals(Person a, Object b) =>
         a._id == b._id &&
         a.value == b.value &&
         a.previous == b.previous);
-int _$PersonHashCode(Person o) => Object.hashAll([
-      o.firstName,
-      o.lastName,
-      o.age,
-      o.address,
-      o._id,
-      o.value,
-      o.previous,
-    ]);
+int _$Person2HashCode(Person2 o) => Object.hashAll([
+  o.firstName,
+  o.lastName,
+  o.age,
+  o.address,
+  o._id,
+  o.value,
+  o.previous,
+]);
 ''',
     expectedLogItems: [
       'value is reserved for ValueCell properties. Accessor not generated.',
@@ -107,7 +128,7 @@ int _$PersonHashCode(Person o) => Object.hashAll([
     ]
 )
 @CellExtension(mutable: true)
-class Person {
+class Person2 {
   final String firstName;
   final String lastName;
   final int age;
@@ -122,18 +143,18 @@ class Person {
   // Accessors not generated for properties with reserved names
 
   final String value;
-  final Person? previous;
+  final Person2? previous;
 
   // Accessors not generated for static properties
 
   static final key = 'personKey';
 
-  Person({
+  Person2({
     required this.firstName,
     required this.lastName,
     required this.age,
     this.value = '',
-    this.previous = null,
+    this.previous,
     int id = 0,
   }) : _id = id;
 }

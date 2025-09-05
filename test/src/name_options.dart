@@ -7,69 +7,78 @@ import 'package:source_gen_test/annotations.dart';
 
 @ShouldGenerate(
     r'''
-/// Extends ValueCell with accessors for Person properties
-extension ThePersonCell on ValueCell<Person> {
-  ValueCell<String> get firstName => apply((value) => value.firstName,
-          key: _$ValueCellPropKeyPerson(this, #firstName))
-      .store(changesOnly: true);
-  ValueCell<String> get lastName => apply((value) => value.lastName,
-          key: _$ValueCellPropKeyPerson(this, #lastName))
-      .store(changesOnly: true);
+/// Extends ValueCell with accessors for Person3 properties
+extension ThePersonCell on ValueCell<Person3> {
+  ValueCell<String> get firstName => apply(
+    (value) => value.firstName,
+    key: _$ValueCellPropKeyPerson3(this, #firstName),
+  ).store(changesOnly: true);
+  ValueCell<String> get lastName => apply(
+    (value) => value.lastName,
+    key: _$ValueCellPropKeyPerson3(this, #lastName),
+  ).store(changesOnly: true);
 }
 
-class _$ValueCellPropKeyPerson {
+class _$ValueCellPropKeyPerson3 {
+  _$ValueCellPropKeyPerson3(this._cell, this._prop);
+
   final ValueCell _cell;
+
   final Symbol _prop;
-  _$ValueCellPropKeyPerson(this._cell, this._prop);
+
   @override
   bool operator ==(other) =>
-      other is _$ValueCellPropKeyPerson &&
+      other is _$ValueCellPropKeyPerson3 &&
       _cell == other._cell &&
       _prop == other._prop;
+
   @override
   int get hashCode => Object.hash(runtimeType, _cell, _prop);
 }
 
-/// Extends MutableCell with accessors for Person properties
-extension TheMutablePersonCell on MutableCell<Person> {
-  MutableCell<String> get firstName =>
-      mutableApply((value) => value.firstName, (p) {
-        final $value = value;
-        value = Person(
-          firstName: p,
-          lastName: $value.lastName,
-        );
-      }, key: _$MutableCellPropKeyPerson(this, #firstName), changesOnly: true);
-  MutableCell<String> get lastName =>
-      mutableApply((value) => value.lastName, (p) {
-        final $value = value;
-        value = Person(
-          firstName: $value.firstName,
-          lastName: p,
-        );
-      }, key: _$MutableCellPropKeyPerson(this, #lastName), changesOnly: true);
+/// Extends MutableCell with accessors for Person3 properties
+extension TheMutablePersonCell on MutableCell<Person3> {
+  MutableCell<String> get firstName => mutableApply(
+    (value) => value.firstName,
+    (p) {
+      final $value = value;
+      value = Person3(firstName: p, lastName: $value.lastName);
+    },
+    key: _$MutableCellPropKeyPerson3(this, #firstName),
+    changesOnly: true,
+  );
+  MutableCell<String> get lastName => mutableApply(
+    (value) => value.lastName,
+    (p) {
+      final $value = value;
+      value = Person3(firstName: $value.firstName, lastName: p);
+    },
+    key: _$MutableCellPropKeyPerson3(this, #lastName),
+    changesOnly: true,
+  );
 }
 
-class _$MutableCellPropKeyPerson {
+class _$MutableCellPropKeyPerson3 {
+  _$MutableCellPropKeyPerson3(this._cell, this._prop);
+
   final ValueCell _cell;
+
   final Symbol _prop;
-  _$MutableCellPropKeyPerson(this._cell, this._prop);
+
   @override
   bool operator ==(other) =>
-      other is _$MutableCellPropKeyPerson &&
+      other is _$MutableCellPropKeyPerson3 &&
       _cell == other._cell &&
       _prop == other._prop;
+
   @override
   int get hashCode => Object.hash(runtimeType, _cell, _prop);
 }
 
-bool _$PersonEquals(Person a, Object b) =>
+bool _$Person3Equals(Person3 a, Object b) =>
     identical(a, b) ||
-    (b is Person && a.firstName == b.firstName && a.lastName == b.lastName);
-int _$PersonHashCode(Person o) => Object.hashAll([
-      o.firstName,
-      o.lastName,
-    ]);
+    (b is Person3 && a.firstName == b.firstName && a.lastName == b.lastName);
+int _$Person3HashCode(Person3 o) => Object.hashAll([o.firstName, o.lastName]);
 '''
 )
 @CellExtension(
@@ -77,11 +86,11 @@ int _$PersonHashCode(Person o) => Object.hashAll([
     mutableName: #TheMutablePersonCell,
     mutable: true
 )
-class Person {
+class Person3 {
   final String firstName;
   final String lastName;
 
-  Person({
+  Person3({
     required this.firstName,
     required this.lastName,
   });
