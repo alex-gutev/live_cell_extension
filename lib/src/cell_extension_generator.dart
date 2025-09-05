@@ -297,6 +297,9 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
 
     final computeFn = Method((b) => b
         ..lambda = true
+        ..requiredParameters.add(
+          Parameter((b) => b..name = 'value')
+        )
         ..body = refer('value')
             .property(name)
             .code
