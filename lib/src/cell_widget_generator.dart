@@ -417,12 +417,15 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
           spec.propertyDefaultValues.containsKey(paramName);
 
       final optional = !param.isRequired && !hasDefault;
-      final nullable = param.type.isNullable;
+      final propType = spec.propertyTypes[paramName];
 
       final prop = _WidgetProperty(
           name: paramName,
-          type: spec.propertyTypes[paramName]
-              ?? param.type.getDisplayString(withNullability: nullable),
+
+          type: propType != null
+              ? _refType(propType)
+              : param.type.accept(TypeExpressionVisitor()),
+
           optional: optional,
           mutable: spec.mutableProperties.contains(paramName),
           meta: false,
@@ -484,12 +487,8 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
   /// If [optional] is true a nullable cell type is returned, otherwise a non-
   /// nullable type is returned.
   Reference _cellPropType(_WidgetProperty prop, bool optional) {
-    final (name, nullable) = _parseType(prop.type);
-
     if (!prop.isCell) {
-      return TypeReference((b) => b..symbol = name
-          ..isNullable = optional || nullable
-      );
+      return prop.type;
     }
 
     if (prop.isActionCell) {
@@ -502,12 +501,17 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
       ..symbol = prop.mutable
             ? 'MutableCell' : prop.meta
             ? 'MetaCell' : 'ValueCell'
-      ..types.add(
-        TypeReference((b) => b..symbol = name
-            ..isNullable = nullable
-        )
-      )
+      ..types.add(prop.type)
       ..isNullable = optional
+    );
+  }
+
+  /// Convert a string [type] descriptor to a [Reference].
+  TypeReference _refType(String type) {
+    final (name, nullable) = _parseType(type);
+
+    return TypeReference((b) => b..symbol = name
+        ..isNullable = nullable
     );
   }
 
@@ -843,7 +847,7 @@ class _WidgetProperty {
   final String name;
 
   /// Property value type
-  final String type;
+  final Reference type;
 
   /// Is this property optional or a required property?
   final bool optional;
@@ -895,9 +899,7 @@ class _WidgetProperty {
 
     return _WidgetProperty(
         name: name,
-        type: type.getDisplayString(
-          withNullability: [NullabilitySuffix.star, NullabilitySuffix.question].contains(type.nullabilitySuffix)
-        ),
+        type: type.accept(TypeExpressionVisitor()),
         optional: optional,
         mutable: mutable,
         meta: meta,
