@@ -89,58 +89,61 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
 
     final spec = _CellExtensionSpec.parse(annotation.objectValue);
 
-    final buffer = StringBuffer();
-
-    final specs = [
-      ..._generateCellExtension(
-          spec: spec,
-          className: element.name3!,
-          fields: fields,
-          types: element.typeParameters2,
-          nullable: false
-      ),
-      if (spec.nullable)
-        ..._generateCellExtension(
-            spec: spec,
-            className: element.name3!,
-            fields: fields,
-            types: element.typeParameters2,
-            nullable: true
-        )
-    ];
-
-    if (spec.mutable) {
-      final mutableFields = _filterReservedFields(
-          visitor.mutableFields,
-          allReservedFieldNames,
-          'MutableCell'
+    final library = Library((b) {
+      b.body.addAll(
+          _generateCellExtension(
+              spec: spec,
+              className: element.name3!,
+              fields: fields,
+              types: element.typeParameters2,
+              nullable: false
+          )
       );
 
-      if (mutableFields.isEmpty) {
-        throw InvalidGenerationSource(
-            'The constructor of class ${element.displayName} does not have any field formal parameters.',
-            todo: 'Add field formal parameters to the constructor of ${element.displayName} or '
-                'remove `mutable: true` from the CellExtension annotation.',
-            element: element
+      if (spec.nullable) {
+        b.body.addAll(
+            _generateCellExtension(
+                spec: spec,
+                className: element.name3!,
+                fields: fields,
+                types: element.typeParameters2,
+                nullable: true
+            )
         );
       }
 
-      specs.addAll(
-          _generateMutableCellExtension(
-              spec: spec,
-              className: element.name3!,
-              fields: mutableFields,
-              constructor: visitor.constructor!,
-              types: element.typeParameters2
-          )
-      );
-    }
+      if (spec.mutable) {
+        final mutableFields = _filterReservedFields(
+            visitor.mutableFields,
+            allReservedFieldNames,
+            'MutableCell'
+        );
 
+        if (mutableFields.isEmpty) {
+          throw InvalidGenerationSource(
+              'The constructor of class ${element.displayName} does not have any field formal parameters.',
+              todo: 'Add field formal parameters to the constructor of ${element.displayName} or '
+                  'remove `mutable: true` from the CellExtension annotation.',
+              element: element
+          );
+        }
+
+        b.body.addAll(
+            _generateMutableCellExtension(
+                spec: spec,
+                className: element.name3!,
+                fields: mutableFields,
+                constructor: visitor.constructor!,
+                types: element.typeParameters2
+            )
+        );
+      }
+    });
+
+    final buffer = StringBuffer();
     final emitter = DartEmitter(useNullSafetySyntax: true);
 
-    for (final spec in specs) {
-      buffer.write(spec.accept(emitter));
-    }
+    buffer.write(library.accept(emitter));
 
     if (spec.generateEquals) {
       buffer.write(DataClassGenerator.generateEqualsHashCode(element));
@@ -157,18 +160,18 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
   }
 
   /// Generate a [ValueCell] extension providing accessors for [fields].
-  List<Spec> _generateCellExtension({
+  Iterable<Spec> _generateCellExtension({
     required _CellExtensionSpec spec,
     required String className,
     required List<FieldElement2> fields,
     required List<TypeParameterElement2> types,
     required bool nullable
-  }) {
+  }) sync* {
     final nullNameSuffix = nullable ? 'N' : '';
     final extensionName = '${spec.name ?? '${className}CellExtension'}$nullNameSuffix';
     final keyClass = '_\$ValueCellPropKey$className$nullNameSuffix';
 
-    final extension = Extension((b) => b..name = extensionName
+    yield Extension((b) => b..name = extensionName
         ..types.addAll(types.map((t) => _typeParamRef(t)))
         ..on = TypeReference((b) => b..symbol = 'ValueCell'
             ..types.add(
@@ -188,10 +191,7 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
         ..docs.add('/// Extends ValueCell with accessors for $className properties')
     );
 
-    return [
-      extension,
-      _generatePropKeyClass(keyClass)
-    ];
+    yield _generatePropKeyClass(keyClass);
   }
 
   /// Generate a [ValueCell] accessor for a given class property.
@@ -235,17 +235,17 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
   }
 
   /// Generate a [MutableCell] extension providing accessors for [fields].
-  List<Spec> _generateMutableCellExtension({
+  Iterable<Spec> _generateMutableCellExtension({
     required _CellExtensionSpec spec,
     required String className,
     required List<FieldElement2> fields,
     required ConstructorElement2 constructor,
     required List<TypeParameterElement2> types,
-  }) {
+  }) sync* {
     final extensionName = spec.mutableName ?? '${className}MutableCellExtension';
     final keyClass = '_\$MutableCellPropKey$className';
 
-    final extension = Extension((b) => b..name = extensionName
+    yield Extension((b) => b..name = extensionName
         ..types.addAll(types.map((t) => _typeParamRef(t)))
         ..on = TypeReference((b) => b..symbol = 'MutableCell'
             ..types.add(
@@ -266,10 +266,7 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
         ..docs.add('/// Extends MutableCell with accessors for $className properties')
     );
 
-    return [
-      extension,
-      _generatePropKeyClass(keyClass)
-    ];
+    yield _generatePropKeyClass(keyClass);
   }
 
 
