@@ -2,12 +2,15 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:analyzer/dart/constant/value.dart';
-import 'package:analyzer/dart/element/element.dart';
+import 'package:analyzer/dart/element/element2.dart';
 import 'package:analyzer/dart/element/nullability_suffix.dart';
 import 'package:analyzer/dart/element/type.dart';
-import 'package:build/src/builder/build_step.dart';
+import 'package:build/build.dart';
+import 'package:code_builder/code_builder.dart';
 import 'package:source_gen/source_gen.dart';
 import 'package:live_cell_annotations/live_cell_annotations.dart';
+
+import 'type_expression_visitor.dart';
 
 /// Generates widget wrappers which take ValueCell properties.
 ///
@@ -53,225 +56,256 @@ import 'package:live_cell_annotations/live_cell_annotations.dart';
 /// ```
 class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
   @override
-  String generateForAnnotatedElement(Element element, ConstantReader annotation, BuildStep buildStep) {
+  String generateForAnnotatedDirective(ElementDirective directive, ConstantReader annotation, BuildStep buildStep) {
     final specs = annotation.read('specs').listValue;
 
+    final library = Library((b) {
+      for (final spec in specs) {
+        final widgetSpec = _WidgetClassSpec.parse(spec);
+
+        b.body.addAll(
+            _generateWidgetClasses(
+              spec: widgetSpec,
+            )
+        );
+      }
+    });
+
     final buffer = StringBuffer();
+    final emitter = DartEmitter(useNullSafetySyntax: true);
 
-    for (final spec in specs) {
-      final widgetSpec = _WidgetClassSpec.parse(spec);
-
-      _generateWidgetClasses(
-          spec: widgetSpec,
-          buffer: buffer
-      );
-    }
+    buffer.write(library.accept(emitter));
 
     return buffer.toString();
   }
 
-  /// Generate the widget classes for each constructor of a widget
-  ///
-  /// The class are generated according to the widget [spec] with the code
-  /// written to [buffer].
-  void _generateWidgetClasses({
+  /// Generate widget classes for each constructor of a widget [spec].
+  List<Class> _generateWidgetClasses({
     required _WidgetClassSpec spec,
-    required StringBuffer buffer
   }) {
     final widgetClass = spec.widgetClass;
 
-    final className = widgetClass.getDisplayString(withNullability: false)
-        .replaceAll(RegExp(r'<(.*)>'), '');
-
+    final className = widgetClass.element3.name3!;
     final genName = spec.genName ?? 'Live$className';
 
-    final defaultConstructor = widgetClass.constructors
-        .firstWhere((e) => e.name.isEmpty);
+    final defaultConstructor = widgetClass.constructors2
+        .firstWhere((e) => e.name3 == 'new');
 
-    final supers = defaultConstructor.parameters
+    final supers = defaultConstructor.formalParameters
         .where((p) => p.isSuperFormal)
-        .map((p) => p.name)
+        .map((p) => p.name3!)
         .toSet();
 
-    if (widgetClass.constructors.length == 1) {
-      buffer.writeln(
-          _generateCellWidget(
+    if (widgetClass.constructors2.length == 1) {
+      return [
+        ..._generateCellWidget(
             spec: spec,
-            constructor: widgetClass.constructors.first,
+            constructor: widgetClass.constructors2.first,
             genName: genName,
-            baseClass: spec.baseClass,
+            baseClass: refer(spec.baseClass),
             soleClass: true,
             supers: supers
-          )
-      );
+        )
+      ];
     }
     else {
-      _generateBaseClass(
-          spec: spec,
-          genName: genName,
-          buffer: buffer,
-          supers: supers
-      );
+      return [
+        _generateBaseClass(
+            spec: spec,
+            genName: genName,
+            supers: supers
+        ),
 
-      final typeArgs = spec.typeArguments.isNotEmpty
-          ? '<${spec.typeArguments.join(',')}>'
-          : '';
+        for (final constructor in widgetClass.constructors2)
+          ..._generateCellWidget(
+              spec: spec,
+              constructor: constructor,
+              genName: '_$genName\$${constructor.name3}',
 
-      for (final constructor in widgetClass.constructors) {
-        final cname = constructor.name.isEmpty ? '' : '\$${constructor.name}';
-        buffer.writeln(
-            _generateCellWidget(
-                spec: spec,
-                constructor: constructor,
-                genName: '_$genName$cname',
-                baseClass: '$genName$typeArgs',
-                soleClass: false,
-                supers: supers
-            )
-        );
-      }
+              baseClass: TypeReference((b) => b..symbol = genName
+                  ..types.addAll(spec.typeArguments.map(refer))
+              ),
+
+              soleClass: false,
+              supers: supers
+          )
+      ];
     }
   }
 
   /// Generate the widget base class with a factory constructor for each constructor.
-  void _generateBaseClass({
+  Class _generateBaseClass({
     required _WidgetClassSpec spec,
     required String genName,
-    required StringBuffer buffer,
     required Set<String> supers,
   }) {
     final widgetClass = spec.widgetClass;
+    final className = widgetClass.element3.name3!;
 
-    final className = widgetClass.getDisplayString(withNullability: false)
-        .replaceAll(RegExp(r'<(.*)>'), '');
+    return Class((b) {
+      b.name = genName;
+      b.types.addAll(spec.typeArguments.map(refer));
+      b.abstract = true;
+      b.extend = refer(spec.baseClass);
 
-    final typeArgs = spec.typeArguments.isNotEmpty
-        ? '<${spec.typeArguments.join(',')}>'
-        : '';
+      b.docs.add(spec.documentation != null
+          ? _makeDocComment(spec.documentation!)
+          : _makeDefaultDocComment(className));
 
-    if (spec.documentation != null) {
-      buffer.writeln(_makeDocComment(spec.documentation!));
-    }
-    else {
-      buffer.writeln(_makeDefaultDocComment(className));
-    }
-
-    if (spec.deprecationNotice != null) {
-      buffer.writeln('@Deprecated("${spec.deprecationNotice}")');
-    }
-
-    buffer.writeln('abstract class $genName$typeArgs extends ${spec.baseClass} {');
-
-    for (final constructor in widgetClass.constructors) {
-      buffer.write('const factory $genName');
-
-      if (constructor.name.isNotEmpty) {
-        buffer.write('.${constructor.name}');
+      if (spec.deprecationNotice != null) {
+        b.annotations.add(
+            refer('Deprecated')
+                .call([literalString(spec.deprecationNotice!)])
+        );
       }
 
-      final props = <_WidgetProperty>[];
-      _generateConstructorArgs(
-          buffer: buffer,
-          constructor: constructor,
-          hasSuperKey: false,
-          spec: spec,
-          properties: props,
-          supers: supers,
-          isFactory: true
+      for (final constructor in widgetClass.constructors2) {
+        b.constructors.add(
+          Constructor((b) {
+            if (constructor.name3 != 'new') {
+              b.name = constructor.name3!;
+            }
+
+            b.factory = true;
+            b.constant = true;
+
+            final props = <_WidgetProperty>[];
+            _generateConstructorArgs(
+                builder: b,
+                constructor: constructor,
+                hasSuperKey: false,
+                spec: spec,
+                properties: props,
+                supers: supers,
+                isFactory: true
+            );
+
+            b.redirect = TypeReference((b) => b
+              ..symbol = '_$genName\$${constructor.name3!}'
+              ..types.addAll(spec.typeArguments.map(refer))
+            );
+          })
+        );
+      }
+
+      b.constructors.add(
+        Constructor((b) => b..name = '_internal'
+            ..constant = true
+            ..optionalParameters.add(
+                Parameter((b) => b..name = 'key'
+                    ..named = true
+                    ..toSuper = true
+                )
+            )
+        )
       );
-
-      if (constructor.name.isEmpty) {
-        buffer.writeln(' = _$genName$typeArgs;');
-      }
-      else {
-        buffer.writeln(' = _$genName\$${constructor.name}$typeArgs;');
-      }
-    }
-
-    buffer.writeln('const $genName._internal({super.key});');
-
-    buffer.writeln('}');
+    });
   }
 
-  /// Generate a wrapper for a widget defined as per [spec].
-  String _generateCellWidget({
+  /// Generate a wrapper class for a widget defined as per [spec].
+  ///
+  /// The wrapper class builds the widget using a given [constructor].
+  List<Class> _generateCellWidget({
     required _WidgetClassSpec spec,
-    required ConstructorElement constructor,
+    required ConstructorElement2 constructor,
     required String genName,
-    required String baseClass,
+    required Reference baseClass,
     required bool soleClass,
     required Set<String> supers
   }) {
     final widgetClass = spec.widgetClass;
 
-    final className = widgetClass.getDisplayString(withNullability: false)
-        .replaceAll(RegExp(r'<(.*)>'), '');
-
-    final buffer = StringBuffer();
-
+    final className = widgetClass.element3.name3!;
     final props = <_WidgetProperty>[];
 
-    final typeArgs = spec.typeArguments.isNotEmpty
-        ? '<${spec.typeArguments.join(',')}>'
-        : '';
+    final stateClassName = '${genName}State';
 
-    if (spec.documentation != null) {
-      buffer.writeln(_makeDocComment(spec.documentation!));
-    }
-    else {
-      buffer.writeln(_makeDefaultDocComment(className));
-    }
+    final stateClass = TypeReference((b) => b..symbol = stateClassName
+        ..types.addAll(spec.typeArguments.map(refer))
+    );
 
-    if (spec.deprecationNotice != null) {
-      buffer.writeln('@Deprecated("${spec.deprecationNotice}")');
-    }
+    final stateSuperClass = TypeReference((b) => b..symbol = 'State'
+        ..types.add(
+          TypeReference((b) => b..symbol = genName
+              ..types.addAll(spec.typeArguments.map(refer))
+          )
+        )
+    );
 
-    final mixins = spec.mixins.isNotEmpty
-        ? 'with ${spec.mixins.join(',')}'
-        : '';
+    return [
+      Class((b) {
+        b.name = genName;
 
-    final interfaces = spec.interfaces.isNotEmpty
-        ? 'implements ${spec.interfaces.join(',')}'
-        : '';
+        b.types.addAll(spec.typeArguments.map(refer));
+        b.extend = baseClass;
+        b.mixins.addAll(spec.mixins.map(refer));
+        b.implements.addAll(spec.interfaces.map(refer));
 
-    buffer.writeln('class $genName$typeArgs extends $baseClass $mixins $interfaces {');
+        b.docs.add(spec.documentation != null
+            ? _makeDocComment(spec.documentation!)
+            : _makeDefaultDocComment(className)
+        );
 
-    buffer.write(_generateConstructor(
-        className: genName, 
-        constructor: constructor, 
-        properties: props, 
-        spec: spec,
-        soleClass: soleClass,
-        supers: supers
-    ));
-    
-    buffer.writeln();
-    buffer.write(_generateProperties(props));
+        if (spec.deprecationNotice != null) {
+          b.annotations.add(
+            refer('Deprecated')
+                .call([literalString(spec.deprecationNotice!)])
+          );
+        }
 
-    if (spec.stateMixins.isNotEmpty) {
-      final mixins = spec.stateMixins.join(',');
-      final stateClass = '_${genName}State$typeArgs';
-      final stateSuperClass = 'State<$genName$typeArgs>';
+        b.constructors.add(
+            _generateConstructor(
+                className: genName,
+                constructor: constructor,
+                properties: props,
+                spec: spec,
+                soleClass: soleClass,
+                supers: supers
+            )
+        );
 
-      buffer.writeln('@override');
-      buffer.writeln('$stateSuperClass createState() => $stateClass();');
+        b.fields.addAll(_generateProperties(props));
 
-      buffer.writeln('}');
-      buffer.writeln('class $stateClass extends $stateSuperClass with $mixins {');
-    }
+        if (spec.stateMixins.isNotEmpty) {
+          b.methods.add(
+            Method((b) => b..name = 'createState'
+                ..annotations.add(refer('override'))
+                ..returns = stateSuperClass
+                ..body = stateClass.call([]).code
+            )
+          );
+        }
+        else {
+          b.methods.add(
+              _generateBuild(
+                  spec: spec,
+                  constructor: constructor,
+                  properties: props,
+                  isStatefulWidget: spec.stateMixins.isNotEmpty,
+                  supers: supers
+              )
+          );
+        }
+      }),
 
-    buffer.writeln();
-    buffer.write(_generateBuild(
-        spec: spec,
-        constructor: constructor,
-        properties: props,
-        isStatefulWidget: spec.stateMixins.isNotEmpty,
-        supers: supers
-    ));
+      if (spec.stateMixins.isNotEmpty)
+        Class((b) {
+          b.name = stateClassName;
+          b.types.addAll(spec.typeArguments.map(refer));
+          b.extend = stateSuperClass;
+          b.mixins.addAll(spec.stateMixins.map(refer));
 
-    buffer.writeln('}');
-
-    return buffer.toString();
+          b.methods.add(
+              _generateBuild(
+                  spec: spec,
+                  constructor: constructor,
+                  properties: props,
+                  isStatefulWidget: spec.stateMixins.isNotEmpty,
+                  supers: supers
+              )
+          );
+        })
+    ];
   }
 
   /// Generate a constructor for a widget wrapper as per [spec].
@@ -280,267 +314,313 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
   /// the list [properties] is populated with the properties which should be added
   /// to the wrapper class. These are deduced from the parameters of
   /// [constructor].
-  String _generateConstructor({
+  Constructor _generateConstructor({
     required String className, 
-    required ConstructorElement constructor, 
+    required ConstructorElement2 constructor,
     required List<_WidgetProperty> properties,
     required _WidgetClassSpec spec,
     required bool soleClass,
     required Set<String> supers
   }) {
-    final buffer = StringBuffer();
+    return Constructor((b) {
+      b.constant = true;
 
-    buffer.writeln('const $className');
+      _generateConstructorArgs(
+          builder: b,
+          constructor: constructor,
+          hasSuperKey: soleClass,
+          spec: spec,
+          properties: properties,
+          supers: supers,
+          isFactory: false
+      );
 
-    _generateConstructorArgs(
-        buffer: buffer,
-        constructor: constructor,
-        hasSuperKey: soleClass,
-        spec: spec,
-        properties: properties,
-        supers: supers,
-        isFactory: false
-    );
-
-    if (soleClass) {
-      buffer.writeln(';');
-    }
-    else {
-      buffer.writeln(': super._internal(key: key);');
-    }
-
-    return buffer.toString();
+      if (!soleClass) {
+        b.initializers.add(
+            refer('super')
+                .property('_internal')
+                .call([], {
+                  'key': refer('key')
+                })
+                .code
+        );
+      }
+    });
   }
 
-  /// Generate the argument list for a constructor
+  /// Generate the argument list for a constructor.
+  ///
+  /// The arguments are added to the constructor parameters using the given
+  /// [builder].
   void _generateConstructorArgs({
-    required StringBuffer buffer,
-    required ConstructorElement constructor,
+    required ConstructorBuilder builder,
+    required ConstructorElement2 constructor,
     required bool hasSuperKey,
     required bool isFactory,
     required _WidgetClassSpec spec,
     required List<_WidgetProperty> properties,
     required Set<String> supers
   }) {
-    buffer.writeln('({');
 
-    if (hasSuperKey) {
-      buffer.writeln('super.key,');
-    }
-    else {
-      buffer.writeln('Key? key,');
-    }
+    builder.optionalParameters.add(
+        Parameter((b) {
+          b.name = 'key';
+          b.named = true;
+
+          if (hasSuperKey) {
+            b.toSuper = true;
+          }
+          else {
+            b.type = TypeReference((b) => b..symbol = 'Key'
+              ..isNullable = true
+            );
+          }
+        })
+    );
 
     for (final prop in spec.addProperties) {
       properties.add(prop);
 
-      if (!prop.optional && prop.defaultValue == null) {
-        buffer.write('required ');
-      }
+      final param = Parameter((b) {
+        b.name = prop.name;
+        b.named = true;
+        b.required = !prop.optional && prop.defaultValue == null;
 
-      if (isFactory) {
-        buffer.write('${_cellPropType(prop, prop.optional)} ${prop.name}');
-      }
-      else {
-        buffer.write('this.${prop.name}');
-
-        if (prop.defaultValue != null) {
-          buffer.write(' = const ValueCell.value(${prop.defaultValue})');
+        if (isFactory) {
+          b.type = _cellPropType(prop, prop.optional);
         }
-      }
+        else {
+          b.toThis = true;
 
-      buffer.writeln(',');
+          if (prop.defaultValue != null) {
+            b.defaultTo = declareConst('ValueCell')
+                .property('value')
+                .call([refer(prop.defaultValue!)])
+                .code;
+          }
+        }
+      });
+
+      builder.optionalParameters.add(param);
     }
 
-    for (final param in constructor.parameters) {
-      if (spec.excludeProperties.contains(param.name) ||
-          (supers.contains(param.name) &&
-              !spec.includeSuperProperties.contains(param.name))) {
+    for (final param in constructor.formalParameters) {
+      final paramName = param.name3!;
+
+      if (spec.excludeProperties.contains(paramName) ||
+          (supers.contains(paramName) &&
+              !spec.includeSuperProperties.contains(paramName))) {
         continue;
       }
 
       final hasDefault = param.hasDefaultValue ||
-          spec.propertyDefaultValues.containsKey(param.name);
+          spec.propertyDefaultValues.containsKey(paramName);
 
       final optional = !param.isRequired && !hasDefault;
-      final nullable = [NullabilitySuffix.question, NullabilitySuffix.star]
-          .contains(param.type.nullabilitySuffix);
+      final nullable = param.type.isNullable;
 
       final prop = _WidgetProperty(
-          name: param.name,
-          type: spec.propertyTypes[param.name]
+          name: paramName,
+          type: spec.propertyTypes[paramName]
               ?? param.type.getDisplayString(withNullability: nullable),
           optional: optional,
-          mutable: spec.mutableProperties.contains(param.name),
+          mutable: spec.mutableProperties.contains(paramName),
           meta: false,
-          isCell: spec.isCellProperty(param.name)
+          isCell: spec.isCellProperty(paramName)
       );
 
       properties.add(prop);
 
-      if (param.isRequired) {
-        buffer.write('required ');
-      }
+      final genParam = Parameter((b) {
+        b.name = paramName;
+        b.named = true;
+        b.required = param.isRequired;
 
-      if (isFactory) {
-        buffer.write('${_cellPropType(prop, prop.optional)} ${prop.name}');
-      }
-      else {
-        buffer.write('this.${param.name}');
+        if (isFactory) {
+          b.type = _cellPropType(prop, prop.optional);
+        }
+        else {
+          b.toThis = true;
 
-        if (hasDefault) {
-          final defaultValue = spec.propertyDefaultValues[param.name]
-              ?? param.defaultValueCode;
+          if (hasDefault) {
+            final defaultValue = spec.propertyDefaultValues[paramName]
+                ?? param.defaultValueCode
+                ?? 'null';
 
-          if (!spec.isCellProperty(param.name)) {
-            buffer.write(' = $defaultValue');
-          }
-          else {
-            buffer.write(' = const ValueCell.value($defaultValue)');
+            if (!spec.isCellProperty(paramName)) {
+              b.defaultTo = Code(defaultValue);
+            }
+            else {
+              b.defaultTo = declareConst('ValueCell')
+                  .property('value')
+                  .call([refer(defaultValue)])
+                  .code;
+            }
           }
         }
-      }
+      });
 
-      buffer.writeln(',');
+      builder.optionalParameters.add(genParam);
     }
-
-    buffer.write('})');
   }
 
   /// Generate the code defining the properties of the wrapper class.
-  String _generateProperties(List<_WidgetProperty> properties) {
-    final buffer = StringBuffer();
+  Iterable<Field> _generateProperties(List<_WidgetProperty> properties) =>
+    properties.map(_generateProperty);
 
-    for (final prop in properties) {
-      if (prop.documentation != null) {
-        buffer.writeln(_makeDocComment(prop.documentation!));
-      }
+  /// Generate a [Field] that defines a widget [property].
+  Field _generateProperty(_WidgetProperty property) => Field((b) {
+    b..name = property.name
+      ..type = _cellPropType(property, property.optional)
+      ..modifier = FieldModifier.final$;
 
-      buffer.writeln('final ${_cellPropType(prop, prop.optional)} ${prop.name};');
+    if (property.documentation != null) {
+      b.docs.add(_makeDocComment(property.documentation!));
     }
+  });
 
-    return buffer.toString();
-  }
-
-  /// Return the cell type for a given property [prop].
+  /// Return a [Reference] to the cell type for a given property [prop].
   ///
   /// If [optional] is true a nullable cell type is returned, otherwise a non-
-  /// null type is returned.
-  String _cellPropType(_WidgetProperty prop, bool optional) {
-    final name = prop.type;
+  /// nullable type is returned.
+  Reference _cellPropType(_WidgetProperty prop, bool optional) {
+    final (name, nullable) = _parseType(prop.type);
 
     if (!prop.isCell) {
-      return optional && !name.endsWith('?')
-          ? '$name?'
-          : name;
+      return TypeReference((b) => b..symbol = name
+          ..isNullable = optional || nullable
+      );
     }
-
-    final suffix = optional ? '?' : '';
 
     if (prop.isActionCell) {
-      return 'ActionCell$suffix';
+      return TypeReference((b) => b..symbol = 'ActionCell'
+          ..isNullable = optional
+      );
     }
 
-    final cell = prop.mutable
-        ? 'MutableCell' : prop.meta
-        ? 'MetaCell' : 'ValueCell';
+    return TypeReference((b) => b
+      ..symbol = prop.mutable
+            ? 'MutableCell' : prop.meta
+            ? 'MetaCell' : 'ValueCell'
+      ..types.add(
+        TypeReference((b) => b..symbol = name
+            ..isNullable = nullable
+        )
+      )
+      ..isNullable = optional
+    );
+  }
 
-    return '$cell<$name>$suffix';
+  /// Parse a type from a string.
+  ///
+  /// Returns a recording containing the type without the nullability suffix,
+  /// and a boolean that is true if [type] is a nullable type and false if it
+  /// is not nullable.
+  (String, bool) _parseType(String type) {
+    if (type.endsWith('?')) {
+      return (type.substring(0, type.length-1), true);
+    }
+    else {
+      return (type, false);
+    }
   }
 
   /// Generate the build method for a widget wrapper class as per [spec].
   ///
   /// The build method calls the widget [constructor] passing in the parameters
   /// defined by [properties].
-  String _generateBuild({
+  Method _generateBuild({
     required _WidgetClassSpec spec,
-    required ConstructorElement constructor,
+    required ConstructorElement2 constructor,
     required List<_WidgetProperty> properties,
     required bool isStatefulWidget,
     required Set<String> supers
   }) {
-    final buffer = StringBuffer();
-    final className = spec.widgetClass.getDisplayString(withNullability: false);
-    
-    buffer.writeln('@override');
-    buffer.writeln('Widget ${spec.buildMethod}(BuildContext context) {');
-
-    if (spec.stateMixins.isNotEmpty) {
-      buffer.writeln('return CellWidget.builder((context) {');
-    }
-
-    if (constructor.name.isEmpty) {
-      buffer.writeln('return $className(');
-    }
-    else {
-      buffer.writeln('return $className.${constructor.name}(');
-    }
-
-    for (final param in constructor.parameters) {
-      if (!spec.propertyValues.containsKey(param.name) &&
-          (spec.excludeProperties.contains(param.name) ||
-              (supers.contains(param.name) &&
-                  !spec.includeSuperProperties.contains(param.name)))) {
-        continue;
+    Expression paramValue(FormalParameterElement param) {
+      final name = param.name3!;
+      
+      if (spec.propertyValues.containsKey(name)) {
+        return refer(spec.propertyValues[name]!);
       }
 
-      if (param.isNamed) {
-        buffer.write('${param.name}: ');
+      final value = isStatefulWidget
+          ? refer('widget').property(name)
+          : refer(name);
+
+      if (spec.isCellProperty(name)) {
+        if (param.isRequired || param.hasDefaultValue) {
+          return value.call([]);
+        }
+
+        return value.nullSafeProperty('call').call([]);
       }
 
-      if (spec.propertyValues.containsKey(param.name)) {
-        buffer.write(spec.propertyValues[param.name]);
+      return value;
+    }
+
+    final className = spec.widgetClass.element3.name3!;
+
+    final cls = TypeReference((b) => b..symbol = className
+        ..types.addAll(spec.typeArguments.map(refer))
+    );
+
+    final constructFn = constructor.name3 == 'new'
+        ? cls
+        : cls.property(constructor.name3!);
+
+    final params = constructor.formalParameters.where((param) {
+      final name = param.name3!;
+
+      if (!spec.propertyValues.containsKey(name) &&
+          (spec.excludeProperties.contains(name) ||
+              (supers.contains(name) &&
+                  !spec.includeSuperProperties.contains(name)))) {
+        return false;
+      }
+
+      return true;
+    });
+
+    final positional = params
+        .where((p) => p.isPositional)
+        .map(paramValue);
+
+    final named = Map.fromEntries(
+        params.where((p) => p.isNamed)
+            .map((p) => MapEntry(p.name3!, paramValue(p)))
+    );
+
+    final widget = constructFn.call(positional, named);
+
+    return Method((b) {
+      b.name = spec.buildMethod;
+      b.returns = refer('Widget');
+      b.annotations.add(refer('override'));
+
+      b.requiredParameters.add(
+        Parameter((b) => b..name = 'context'
+            ..type = refer('BuildContext')
+        )
+      );
+
+      if (isStatefulWidget) {
+        b.body = refer('CellWidget')
+            .property('builder')
+            .call([
+              Method((b) => b
+                  ..requiredParameters.add(
+                      Parameter((b) => b..name = 'context')
+                  )
+                  ..lambda = true
+                  ..body = widget.code
+              ).closure
+            ])
+            .code;
       }
       else {
-        if (isStatefulWidget) {
-          buffer.write('widget.');
-        }
-        buffer.write(param.name);
-
-        if (spec.isCellProperty(param.name)) {
-          if (param.isRequired || param.hasDefaultValue) {
-            buffer.write('()');
-          }
-          else {
-            buffer.write('?.call()');
-          }
-        }
+        b.body = widget.code;
       }
-
-      buffer.writeln(',');
-    }
-
-    buffer.writeln(');');
-
-    if (spec.stateMixins.isNotEmpty) {
-      buffer.writeln('});');
-    }
-
-    buffer.writeln('}');
-
-    return buffer.toString();
-  }
-
-  /// Generate the bind method for wrapper class [genName].
-  String _generateBindMethod(String genName, List<_WidgetProperty> props) {
-    final buffer = StringBuffer();
-
-    buffer.writeln('${genName} bind({');
-
-    for (final prop in props) {
-      final type = _cellPropType(prop, true);
-      buffer.writeln('$type ${prop.name},');
-    }
-
-    buffer.writeln('}) => $genName(');
-
-    for (final prop in props) {
-      buffer.writeln('${prop.name}: ${prop.name} ?? this.${prop.name},');
-    }
-
-    buffer.writeln(');');
-
-    return buffer.toString();
+    });
   }
 
   /// Convert a multi-line string into a documentation comment
