@@ -64,9 +64,7 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
         final widgetSpec = _WidgetClassSpec.parse(spec);
 
         b.body.addAll(
-            _generateWidgetClasses(
-              spec: widgetSpec,
-            )
+            _generateWidgetClasses(widgetSpec)
         );
       }
     });
@@ -80,9 +78,7 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
   }
 
   /// Generate widget classes for each constructor of a widget [spec].
-  List<Class> _generateWidgetClasses({
-    required _WidgetClassSpec spec,
-  }) {
+  Iterable<Class> _generateWidgetClasses(_WidgetClassSpec spec) sync* {
     final widgetClass = spec.widgetClass;
 
     final className = widgetClass.element3.name3!;
@@ -97,39 +93,36 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
         .toSet();
 
     if (widgetClass.constructors2.length == 1) {
-      return [
-        ..._generateCellWidget(
-            spec: spec,
-            constructor: widgetClass.constructors2.first,
-            genName: genName,
-            baseClass: refer(spec.baseClass),
-            soleClass: true,
-            supers: supers
-        )
-      ];
+      yield* _generateCellWidget(
+          spec: spec,
+          constructor: widgetClass.constructors2.first,
+          genName: genName,
+          baseClass: refer(spec.baseClass),
+          soleClass: true,
+          supers: supers
+      );
     }
     else {
-      return [
-        _generateBaseClass(
+      yield _generateBaseClass(
+          spec: spec,
+          genName: genName,
+          supers: supers
+      );
+
+      for (final constructor in widgetClass.constructors2) {
+        yield* _generateCellWidget(
             spec: spec,
-            genName: genName,
+            constructor: constructor,
+            genName: '_$genName\$${constructor.name3}',
+
+            baseClass: TypeReference((b) => b..symbol = genName
+              ..types.addAll(spec.typeArguments.map(refer))
+            ),
+
+            soleClass: false,
             supers: supers
-        ),
-
-        for (final constructor in widgetClass.constructors2)
-          ..._generateCellWidget(
-              spec: spec,
-              constructor: constructor,
-              genName: '_$genName\$${constructor.name3}',
-
-              baseClass: TypeReference((b) => b..symbol = genName
-                  ..types.addAll(spec.typeArguments.map(refer))
-              ),
-
-              soleClass: false,
-              supers: supers
-          )
-      ];
+        );
+      }
     }
   }
 
@@ -205,14 +198,14 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
   /// Generate a wrapper class for a widget defined as per [spec].
   ///
   /// The wrapper class builds the widget using a given [constructor].
-  List<Class> _generateCellWidget({
+  Iterable<Class> _generateCellWidget({
     required _WidgetClassSpec spec,
     required ConstructorElement2 constructor,
     required String genName,
     required Reference baseClass,
     required bool soleClass,
     required Set<String> supers
-  }) {
+  }) sync* {
     final widgetClass = spec.widgetClass;
 
     final className = widgetClass.element3.name3!;
@@ -232,80 +225,79 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
         )
     );
 
-    return [
-      Class((b) {
-        b.name = genName;
+    yield Class((b) {
+      b.name = genName;
 
-        b.types.addAll(spec.typeArguments.map(refer));
-        b.extend = baseClass;
-        b.mixins.addAll(spec.mixins.map(refer));
-        b.implements.addAll(spec.interfaces.map(refer));
+      b.types.addAll(spec.typeArguments.map(refer));
+      b.extend = baseClass;
+      b.mixins.addAll(spec.mixins.map(refer));
+      b.implements.addAll(spec.interfaces.map(refer));
 
-        b.docs.add(spec.documentation != null
-            ? _makeDocComment(spec.documentation!)
-            : _makeDefaultDocComment(className)
-        );
+      b.docs.add(spec.documentation != null
+          ? _makeDocComment(spec.documentation!)
+          : _makeDefaultDocComment(className)
+      );
 
-        if (spec.deprecationNotice != null) {
-          b.annotations.add(
+      if (spec.deprecationNotice != null) {
+        b.annotations.add(
             refer('Deprecated')
                 .call([literalString(spec.deprecationNotice!)])
-          );
-        }
+        );
+      }
 
-        b.constructors.add(
-            _generateConstructor(
-                className: genName,
+      b.constructors.add(
+          _generateConstructor(
+              className: genName,
+              constructor: constructor,
+              properties: props,
+              spec: spec,
+              soleClass: soleClass,
+              supers: supers
+          )
+      );
+
+      b.fields.addAll(_generateProperties(props));
+
+      if (spec.stateMixins.isNotEmpty) {
+        b.methods.add(
+            Method((b) => b..name = 'createState'
+              ..annotations.add(refer('override'))
+              ..returns = stateSuperClass
+              ..body = stateClass.call([]).code
+            )
+        );
+      }
+      else {
+        b.methods.add(
+            _generateBuild(
+                spec: spec,
                 constructor: constructor,
                 properties: props,
-                spec: spec,
-                soleClass: soleClass,
+                isStatefulWidget: spec.stateMixins.isNotEmpty,
                 supers: supers
             )
         );
+      }
+    });
 
-        b.fields.addAll(_generateProperties(props));
+    if (spec.stateMixins.isNotEmpty) {
+      yield Class((b) {
+        b.name = stateClassName;
+        b.types.addAll(spec.typeArguments.map(refer));
+        b.extend = stateSuperClass;
+        b.mixins.addAll(spec.stateMixins.map(refer));
 
-        if (spec.stateMixins.isNotEmpty) {
-          b.methods.add(
-            Method((b) => b..name = 'createState'
-                ..annotations.add(refer('override'))
-                ..returns = stateSuperClass
-                ..body = stateClass.call([]).code
+        b.methods.add(
+            _generateBuild(
+                spec: spec,
+                constructor: constructor,
+                properties: props,
+                isStatefulWidget: spec.stateMixins.isNotEmpty,
+                supers: supers
             )
-          );
-        }
-        else {
-          b.methods.add(
-              _generateBuild(
-                  spec: spec,
-                  constructor: constructor,
-                  properties: props,
-                  isStatefulWidget: spec.stateMixins.isNotEmpty,
-                  supers: supers
-              )
-          );
-        }
-      }),
-
-      if (spec.stateMixins.isNotEmpty)
-        Class((b) {
-          b.name = stateClassName;
-          b.types.addAll(spec.typeArguments.map(refer));
-          b.extend = stateSuperClass;
-          b.mixins.addAll(spec.stateMixins.map(refer));
-
-          b.methods.add(
-              _generateBuild(
-                  spec: spec,
-                  constructor: constructor,
-                  properties: props,
-                  isStatefulWidget: spec.stateMixins.isNotEmpty,
-                  supers: supers
-              )
-          );
-        })
-    ];
+        );
+      });
+    }
   }
 
   /// Generate a constructor for a widget wrapper as per [spec].
