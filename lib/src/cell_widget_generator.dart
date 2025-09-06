@@ -210,7 +210,7 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
     final className = widgetClass.element3.name3!;
     final props = <_WidgetProperty>[];
 
-    final stateClassName = '${genName}State';
+    final stateClassName = '${genName.startsWith('_') ? '' : '_'}${genName}State';
 
     final stateClass = TypeReference((b) => b..symbol = stateClassName
         ..types.addAll(spec.typeArguments.map(refer))
