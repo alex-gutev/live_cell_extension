@@ -12,7 +12,6 @@ builders:
       "generateCellExtension",
       "generateDataClass",
       "generateCellWidgets",
-      "generateValueExtensions"
     ] # Builder name(BuilderOption) this is a definition
     build_extensions: { ".dart": [".g.part"] }
     auto_apply: dependents
