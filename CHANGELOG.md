@@ -1,3 +1,7 @@
+## 0.7.0
+
+* Compatibility with Flutter 3.35.0.
+
 ## 0.6.2
 
 No new user facing features.
