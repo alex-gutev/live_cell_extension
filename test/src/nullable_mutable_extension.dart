@@ -13,6 +13,7 @@ extension Person5CellExtension on ValueCell<Person5> {
     (value) => value.name,
     key: _$ValueCellPropKeyPerson5(this, #name),
   ).store(changesOnly: true);
+
   ValueCell<int?> get age => apply(
     (value) => value.age,
     key: _$ValueCellPropKeyPerson5(this, #age),
@@ -42,6 +43,7 @@ extension Person5CellExtensionN on ValueCell<Person5?> {
     (value) => value?.name,
     key: _$ValueCellPropKeyPerson5N(this, #name),
   ).store(changesOnly: true);
+
   ValueCell<int?> get age => apply(
     (value) => value?.age,
     key: _$ValueCellPropKeyPerson5N(this, #age),
@@ -76,6 +78,7 @@ extension Person5MutableCellExtension on MutableCell<Person5> {
     key: _$MutableCellPropKeyPerson5(this, #name),
     changesOnly: true,
   );
+
   MutableCell<int?> get age => mutableApply(
     (value) => value.age,
     (p) {

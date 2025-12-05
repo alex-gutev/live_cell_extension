@@ -27,7 +27,7 @@ class TypeExpressionVisitor extends UnifyingTypeVisitor<cb.Reference> {
         b.returnType = type.returnType.accept(this);
         
         for (final param in type.formalParameters) {
-          final name = param.name3;
+          final name = param.name;
           final type = param.type.accept(this);
           
           if (param.isRequiredPositional) {
@@ -48,7 +48,7 @@ class TypeExpressionVisitor extends UnifyingTypeVisitor<cb.Reference> {
   @override
   cb.Reference visitInterfaceType(InterfaceType type) =>
       cb.TypeReference((b) {
-        b.symbol = type.element3.name3!;
+        b.symbol = type.element.name!;
         b.isNullable = type.isNullable || nullable;
 
         for (final param in type.typeArguments) {
@@ -72,7 +72,7 @@ class TypeExpressionVisitor extends UnifyingTypeVisitor<cb.Reference> {
   
   @override
   cb.Reference visitTypeParameterType(TypeParameterType type) =>
-      cb.refer(type.element3.name3!);
+      cb.refer(type.element.name!);
 
   @override
   cb.Reference visitVoidType(VoidType type) => cb.refer('void');

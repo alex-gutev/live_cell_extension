@@ -1,5 +1,5 @@
 import 'package:analyzer/dart/constant/value.dart';
-import 'package:analyzer/dart/element/element2.dart';
+import 'package:analyzer/dart/element/element.dart';
 import 'package:build/build.dart';
 import 'package:code_builder/code_builder.dart';
 import 'package:live_cell_annotations/live_cell_annotations.dart';
@@ -64,8 +64,8 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
       reservedFieldNames.union(reservedMutableFieldNames);
 
   @override
-  String generateForAnnotatedElement(Element2 element, ConstantReader annotation, BuildStep buildStep) {
-    if (element is! ClassElement2) {
+  String generateForAnnotatedElement(Element element, ConstantReader annotation, BuildStep buildStep) {
+    if (element is! ClassElement) {
       throw InvalidGenerationSourceError(
         'The CellExtension annotation is only applicable to classes.',
         todo: 'Remove the CellExtension annotation',
@@ -74,7 +74,7 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
     }
 
     final visitor = ClassPropVisitor();
-    element.visitChildren2(visitor);
+    element.visitChildren(visitor);
 
     final fields = _filterReservedFields(visitor.fields);
 
@@ -93,9 +93,9 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
       b.body.addAll(
           _generateCellExtension(
               spec: spec,
-              className: element.name3!,
+              className: element.name!,
               fields: fields,
-              types: element.typeParameters2,
+              types: element.typeParameters,
               nullable: false
           )
       );
@@ -104,9 +104,9 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
         b.body.addAll(
             _generateCellExtension(
                 spec: spec,
-                className: element.name3!,
+                className: element.name!,
                 fields: fields,
-                types: element.typeParameters2,
+                types: element.typeParameters,
                 nullable: true
             )
         );
@@ -131,10 +131,10 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
         b.body.addAll(
             _generateMutableCellExtension(
                 spec: spec,
-                className: element.name3!,
+                className: element.name!,
                 fields: mutableFields,
                 constructor: visitor.constructor!,
-                types: element.typeParameters2
+                types: element.typeParameters
             )
         );
       }
@@ -153,8 +153,8 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
   }
 
   /// Return a [Reference] that refers to a generic type parameter declaration
-  Reference _typeParamRef(TypeParameterElement2 param) {
-    return TypeReference((b) => b..symbol = param.name3!
+  Reference _typeParamRef(TypeParameterElement param) {
+    return TypeReference((b) => b..symbol = param.name!
         ..bound = param.bound?.accept(TypeExpressionVisitor())
     );
   }
@@ -163,8 +163,8 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
   Iterable<Spec> _generateCellExtension({
     required _CellExtensionSpec spec,
     required String className,
-    required List<FieldElement2> fields,
-    required List<TypeParameterElement2> types,
+    required List<FieldElement> fields,
+    required List<TypeParameterElement> types,
     required bool nullable
   }) sync* {
     final nullNameSuffix = nullable ? 'N' : '';
@@ -176,7 +176,7 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
         ..on = TypeReference((b) => b..symbol = 'ValueCell'
             ..types.add(
               TypeReference((b) => b..symbol = className
-                  ..types.addAll(types.map((t) => refer(t.name3!)))
+                  ..types.addAll(types.map((t) => refer(t.name!)))
                   ..isNullable = nullable
               )
             )
@@ -196,11 +196,11 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
 
   /// Generate a [ValueCell] accessor for a given class property.
   Method _generateCellAccessor({
-    required FieldElement2 field,
+    required FieldElement field,
     required String keyClass,
     required bool nullable,
   }) {
-    final name = field.name3!;
+    final name = field.name!;
 
     final propType = TypeReference((b) => b..symbol = 'ValueCell'
         ..types.add(field.type.accept(TypeExpressionVisitor(nullable: nullable)))
@@ -238,9 +238,9 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
   Iterable<Spec> _generateMutableCellExtension({
     required _CellExtensionSpec spec,
     required String className,
-    required List<FieldElement2> fields,
-    required ConstructorElement2 constructor,
-    required List<TypeParameterElement2> types,
+    required List<FieldElement> fields,
+    required ConstructorElement constructor,
+    required List<TypeParameterElement> types,
   }) sync* {
     final extensionName = spec.mutableName ?? '${className}MutableCellExtension';
     final keyClass = '_\$MutableCellPropKey$className';
@@ -250,7 +250,7 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
         ..on = TypeReference((b) => b..symbol = 'MutableCell'
             ..types.add(
               TypeReference((b) => b..symbol = className
-                  ..types.addAll(types.map((t) => refer(t.name3!)))
+                  ..types.addAll(types.map((t) => refer(t.name!)))
               )
             )
         )
@@ -273,12 +273,12 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
   /// Generate a [MutableCell] accessor for a given class property.
   Method _generateMutableAccessor({
     required String className,
-    required ConstructorElement2 constructor,
-    required List<FieldElement2> fields,
-    required FieldElement2 field,
+    required ConstructorElement constructor,
+    required List<FieldElement> fields,
+    required FieldElement field,
     required String keyClass
   }) {
-    final name = field.name3!;
+    final name = field.name!;
 
     final propType = TypeReference((b) => b..symbol = 'MutableCell'
       ..types.add(field.type.accept(TypeExpressionVisitor()))
@@ -343,38 +343,38 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
   /// property [fieldName], which is given the value [fieldValue].
   Expression _generateCopyConstruct({
     required String className,
-    required ConstructorElement2 constructor,
+    required ConstructorElement constructor,
     required String fieldName,
     required String fieldValue,
     required String valueVar,
   }) {
-    FieldFormalParameterElement2 getFieldFormal(FormalParameterElement param) {
-      if (param is SuperFormalParameterElement2) {
-        return getFieldFormal(param.superConstructorParameter2!);
+    FieldFormalParameterElement getFieldFormal(FormalParameterElement param) {
+      if (param is SuperFormalParameterElement) {
+        return getFieldFormal(param.superConstructorParameter!);
       }
 
-      return param as FieldFormalParameterElement2;
+      return param as FieldFormalParameterElement;
     }
 
-    Expression getFieldValue(FormalParameterElement param) => param.name3 == fieldName
+    Expression getFieldValue(FormalParameterElement param) => param.name == fieldName
         ? refer(fieldValue)
-        : refer(valueVar).property(param.name3!);
+        : refer(valueVar).property(param.name!);
 
     final fields = constructor.formalParameters
       .where((param) {
-        if (param.isInitializingFormal && param is FieldFormalParameterElement2) {
-          return !allReservedFieldNames.contains(param.field2?.name3);
+        if (param.isInitializingFormal && param is FieldFormalParameterElement) {
+          return !allReservedFieldNames.contains(param.field?.name);
         }
 
         return param.isSuperFormal &&
-            param is SuperFormalParameterElement2 &&
-            param.superConstructorParameter2 != null;
+            param is SuperFormalParameterElement &&
+            param.superConstructorParameter != null;
       })
       .map(getFieldFormal);
 
     final named = Map.fromEntries(
         fields.where((p) => p.isNamed)
-            .map((p) => MapEntry(p.name3!, getFieldValue(p)))
+            .map((p) => MapEntry(p.name!, getFieldValue(p)))
     );
 
     final positional = fields.where((p) => !p.isNamed)
@@ -448,16 +448,16 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
   /// [fields] and a warning is emitted with [extType] naming the extended class.
   ///
   /// The filtered list is returned, [fields] is not modified.
-  static List<FieldElement2> _filterReservedFields(
-      List<FieldElement2> fields,
+  static List<FieldElement> _filterReservedFields(
+      List<FieldElement> fields,
       [Set<String> reserved = reservedFieldNames, String extType = 'ValueCell']) {
-    List<FieldElement2> filtered = [];
+    List<FieldElement> filtered = [];
 
     for (final field in fields) {
-      if (reservedObjectFieldNames.contains(field.name3)) {
+      if (reservedObjectFieldNames.contains(field.name)) {
         continue;
       }
-      else if (reserved.contains(field.name3)) {
+      else if (reserved.contains(field.name)) {
         log.info('${field.displayName} is reserved for $extType properties. '
             'Accessor not generated.');
       }

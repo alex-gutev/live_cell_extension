@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:analyzer/dart/constant/value.dart';
-import 'package:analyzer/dart/element/element2.dart';
+import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:build/build.dart';
 import 'package:code_builder/code_builder.dart';
@@ -80,21 +80,21 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
   Iterable<Class> _generateWidgetClasses(_WidgetClassSpec spec) sync* {
     final widgetClass = spec.widgetClass;
 
-    final className = widgetClass.element3.name3!;
+    final className = widgetClass.element.name!;
     final genName = spec.genName ?? 'Live$className';
 
-    final defaultConstructor = widgetClass.constructors2
-        .firstWhere((e) => e.name3 == 'new');
+    final defaultConstructor = widgetClass.constructors
+        .firstWhere((e) => e.name == 'new');
 
     final supers = defaultConstructor.formalParameters
         .where((p) => p.isSuperFormal)
-        .map((p) => p.name3!)
+        .map((p) => p.name!)
         .toSet();
 
-    if (widgetClass.constructors2.length == 1) {
+    if (widgetClass.constructors.length == 1) {
       yield* _generateCellWidget(
           spec: spec,
-          constructor: widgetClass.constructors2.first,
+          constructor: widgetClass.constructors.first,
           genName: genName,
           baseClass: refer(spec.baseClass),
           soleClass: true,
@@ -108,11 +108,11 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
           supers: supers
       );
 
-      for (final constructor in widgetClass.constructors2) {
+      for (final constructor in widgetClass.constructors) {
         yield* _generateCellWidget(
             spec: spec,
             constructor: constructor,
-            genName: '_$genName\$${constructor.name3}',
+            genName: '_$genName\$${constructor.name}',
 
             baseClass: TypeReference((b) => b..symbol = genName
               ..types.addAll(spec.typeArguments.map(refer))
@@ -132,7 +132,7 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
     required Set<String> supers,
   }) {
     final widgetClass = spec.widgetClass;
-    final className = widgetClass.element3.name3!;
+    final className = widgetClass.element.name!;
 
     return Class((b) {
       b.name = genName;
@@ -151,11 +151,11 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
         );
       }
 
-      for (final constructor in widgetClass.constructors2) {
+      for (final constructor in widgetClass.constructors) {
         b.constructors.add(
           Constructor((b) {
-            if (constructor.name3 != 'new') {
-              b.name = constructor.name3!;
+            if (constructor.name != 'new') {
+              b.name = constructor.name!;
             }
 
             b.factory = true;
@@ -173,7 +173,7 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
             );
 
             b.redirect = TypeReference((b) => b
-              ..symbol = '_$genName\$${constructor.name3!}'
+              ..symbol = '_$genName\$${constructor.name!}'
               ..types.addAll(spec.typeArguments.map(refer))
             );
           })
@@ -199,7 +199,7 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
   /// The wrapper class builds the widget using a given [constructor].
   Iterable<Class> _generateCellWidget({
     required _WidgetClassSpec spec,
-    required ConstructorElement2 constructor,
+    required ConstructorElement constructor,
     required String genName,
     required Reference baseClass,
     required bool soleClass,
@@ -207,7 +207,7 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
   }) sync* {
     final widgetClass = spec.widgetClass;
 
-    final className = widgetClass.element3.name3!;
+    final className = widgetClass.element.name!;
     final props = <_WidgetProperty>[];
 
     final stateClassName = '${genName.startsWith('_') ? '' : '_'}${genName}State';
@@ -307,7 +307,7 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
   /// [constructor].
   Constructor _generateConstructor({
     required String className, 
-    required ConstructorElement2 constructor,
+    required ConstructorElement constructor,
     required List<_WidgetProperty> properties,
     required _WidgetClassSpec spec,
     required bool soleClass,
@@ -345,7 +345,7 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
   /// [builder].
   void _generateConstructorArgs({
     required ConstructorBuilder builder,
-    required ConstructorElement2 constructor,
+    required ConstructorElement constructor,
     required bool hasSuperKey,
     required bool isFactory,
     required _WidgetClassSpec spec,
@@ -396,7 +396,7 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
     }
 
     for (final param in constructor.formalParameters) {
-      final paramName = param.name3!;
+      final paramName = param.name!;
 
       if (spec.excludeProperties.contains(paramName) ||
           (supers.contains(paramName) &&
@@ -526,13 +526,13 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
   /// defined by [properties].
   Method _generateBuild({
     required _WidgetClassSpec spec,
-    required ConstructorElement2 constructor,
+    required ConstructorElement constructor,
     required List<_WidgetProperty> properties,
     required bool isStatefulWidget,
     required Set<String> supers
   }) {
     Expression paramValue(FormalParameterElement param) {
-      final name = param.name3!;
+      final name = param.name!;
       
       if (spec.propertyValues.containsKey(name)) {
         return refer(spec.propertyValues[name]!);
@@ -553,18 +553,18 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
       return value;
     }
 
-    final className = spec.widgetClass.element3.name3!;
+    final className = spec.widgetClass.element.name!;
 
     final cls = TypeReference((b) => b..symbol = className
         ..types.addAll(spec.typeArguments.map(refer))
     );
 
-    final constructFn = constructor.name3 == 'new'
+    final constructFn = constructor.name == 'new'
         ? cls
-        : cls.property(constructor.name3!);
+        : cls.property(constructor.name!);
 
     final params = constructor.formalParameters.where((param) {
-      final name = param.name3!;
+      final name = param.name!;
 
       if (!spec.propertyValues.containsKey(name) &&
           (spec.excludeProperties.contains(name) ||
@@ -582,7 +582,7 @@ class CellWidgetGenerator extends GeneratorForAnnotation<GenerateCellWidgets> {
 
     final named = Map.fromEntries(
         params.where((p) => p.isNamed)
-            .map((p) => MapEntry(p.name3!, paramValue(p)))
+            .map((p) => MapEntry(p.name!, paramValue(p)))
     );
 
     final widget = constructFn.call(positional, named);

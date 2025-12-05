@@ -11,14 +11,17 @@ extension Person1CellExtension on ValueCell<Person1> {
     (value) => value.firstName,
     key: _$ValueCellPropKeyPerson1(this, #firstName),
   ).store(changesOnly: true);
+
   ValueCell<String> get lastName => apply(
     (value) => value.lastName,
     key: _$ValueCellPropKeyPerson1(this, #lastName),
   ).store(changesOnly: true);
+
   ValueCell<int> get age => apply(
     (value) => value.age,
     key: _$ValueCellPropKeyPerson1(this, #age),
   ).store(changesOnly: true);
+
   ValueCell<String> get fullName => apply(
     (value) => value.fullName,
     key: _$ValueCellPropKeyPerson1(this, #fullName),

@@ -9,6 +9,7 @@ extension Wrapper1CellExtension<T> on ValueCell<Wrapper1<T>> {
     (value) => value.wrappedValue,
     key: _$ValueCellPropKeyWrapper1(this, #wrappedValue),
   ).store(changesOnly: true);
+
   ValueCell<int> get wrapperId => apply(
     (value) => value.wrapperId,
     key: _$ValueCellPropKeyWrapper1(this, #wrapperId),
@@ -43,6 +44,7 @@ extension Wrapper1MutableCellExtension<T> on MutableCell<Wrapper1<T>> {
     key: _$MutableCellPropKeyWrapper1(this, #wrappedValue),
     changesOnly: true,
   );
+
   MutableCell<int> get wrapperId => mutableApply(
     (value) => value.wrapperId,
     (p) {
@@ -101,6 +103,7 @@ extension Wrapper2CellExtension<T extends List<dynamic>>
     (value) => value.wrappedValue,
     key: _$ValueCellPropKeyWrapper2(this, #wrappedValue),
   ).store(changesOnly: true);
+
   ValueCell<int> get wrapperId => apply(
     (value) => value.wrapperId,
     key: _$ValueCellPropKeyWrapper2(this, #wrapperId),
@@ -136,6 +139,7 @@ extension Wrapper2MutableCellExtension<T extends List<dynamic>>
     key: _$MutableCellPropKeyWrapper2(this, #wrappedValue),
     changesOnly: true,
   );
+
   MutableCell<int> get wrapperId => mutableApply(
     (value) => value.wrapperId,
     (p) {
@@ -194,6 +198,7 @@ extension Wrapper3CellExtension<T extends List<dynamic>?>
     (value) => value.wrappedValue,
     key: _$ValueCellPropKeyWrapper3(this, #wrappedValue),
   ).store(changesOnly: true);
+
   ValueCell<int> get wrapperId => apply(
     (value) => value.wrapperId,
     key: _$ValueCellPropKeyWrapper3(this, #wrapperId),
@@ -229,6 +234,7 @@ extension Wrapper3MutableCellExtension<T extends List<dynamic>?>
     key: _$MutableCellPropKeyWrapper3(this, #wrappedValue),
     changesOnly: true,
   );
+
   MutableCell<int> get wrapperId => mutableApply(
     (value) => value.wrapperId,
     (p) {
@@ -287,10 +293,12 @@ extension Wrapper4CellExtension<T extends Object, U extends List<dynamic>>
     (value) => value.wrappedValue1,
     key: _$ValueCellPropKeyWrapper4(this, #wrappedValue1),
   ).store(changesOnly: true);
+
   ValueCell<U> get wrappedValue2 => apply(
     (value) => value.wrappedValue2,
     key: _$ValueCellPropKeyWrapper4(this, #wrappedValue2),
   ).store(changesOnly: true);
+
   ValueCell<int> get wrapperId => apply(
     (value) => value.wrapperId,
     key: _$ValueCellPropKeyWrapper4(this, #wrapperId),
@@ -333,6 +341,7 @@ extension Wrapper4MutableCellExtension<
     key: _$MutableCellPropKeyWrapper4(this, #wrappedValue1),
     changesOnly: true,
   );
+
   MutableCell<U> get wrappedValue2 => mutableApply(
     (value) => value.wrappedValue2,
     (p) {
@@ -346,6 +355,7 @@ extension Wrapper4MutableCellExtension<
     key: _$MutableCellPropKeyWrapper4(this, #wrappedValue2),
     changesOnly: true,
   );
+
   MutableCell<int> get wrapperId => mutableApply(
     (value) => value.wrapperId,
     (p) {

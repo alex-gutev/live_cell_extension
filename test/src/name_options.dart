@@ -13,6 +13,7 @@ extension ThePersonCell on ValueCell<Person3> {
     (value) => value.firstName,
     key: _$ValueCellPropKeyPerson3(this, #firstName),
   ).store(changesOnly: true);
+
   ValueCell<String> get lastName => apply(
     (value) => value.lastName,
     key: _$ValueCellPropKeyPerson3(this, #lastName),
@@ -47,6 +48,7 @@ extension TheMutablePersonCell on MutableCell<Person3> {
     key: _$MutableCellPropKeyPerson3(this, #firstName),
     changesOnly: true,
   );
+
   MutableCell<String> get lastName => mutableApply(
     (value) => value.lastName,
     (p) {

@@ -13,6 +13,7 @@ extension MyClass2CellExtension on ValueCell<MyClass2> {
     (value) => value.a,
     key: _$ValueCellPropKeyMyClass2(this, #a),
   ).store(changesOnly: true);
+
   ValueCell<int> get b => apply(
     (value) => value.b,
     key: _$ValueCellPropKeyMyClass2(this, #b),

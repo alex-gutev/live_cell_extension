@@ -12,6 +12,7 @@ extension Person4CellExtension on ValueCell<Person4> {
     (value) => value.name,
     key: _$ValueCellPropKeyPerson4(this, #name),
   ).store(changesOnly: true);
+
   ValueCell<int?> get age => apply(
     (value) => value.age,
     key: _$ValueCellPropKeyPerson4(this, #age),
@@ -41,6 +42,7 @@ extension Person4CellExtensionN on ValueCell<Person4?> {
     (value) => value?.name,
     key: _$ValueCellPropKeyPerson4N(this, #name),
   ).store(changesOnly: true);
+
   ValueCell<int?> get age => apply(
     (value) => value?.age,
     key: _$ValueCellPropKeyPerson4N(this, #age),
