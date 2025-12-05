@@ -1,3 +1,7 @@
+## 0.7.1
+
+* Upgrade source_gen dependency to 4.11.0
+
 ## 0.7.0
 
 * Compatibility with Flutter 3.35.0.
