@@ -1,3 +1,10 @@
+## 0.7.2
+
+Fixes:
+
+* Fixed issue with exception being thrown when encountering
+  a super constructor parameter that is not a field formal.
+
 ## 0.7.1
 
 * Upgrade source_gen dependency to 4.11.0
