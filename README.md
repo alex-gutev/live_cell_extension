@@ -33,32 +33,28 @@ the properties of classes annotated with `CellExtension`.
 
 ## Getting started
 
-To use this package you'll need to add the following to the `dependencies` of your `pubspec.yaml`:
+To use this package you'll need to add `live_cells_core` to your `pubspec.yaml`:
 
-```yaml
-dependencies:
-  live_cells_core: ^0.15.0
-  ...
+```sh
+dart pub add live_cells_core
 ```
 
 You'll also need to add this package and `build_runner` to the `dev_dependencies` of your 
 `pubspec.yaml`:
 
-```yaml
-dev_dependencies:
-  build_runner:
-  live_cell_extension: ^0.4.5
-  ...
+```sh
+dart pub add --dev live_cell_extension
+dart pub add --dev build_runner
 ```
 
 See the example in the `example` directory for an example of how to setup your project.
 
 ## Usage
 
-Annotate your classes with `CellExtension()` from the `live_cells` package:
+Annotate your classes with `CellExtension()` from the `live_cells_core` package:
 
 ```dart
-import 'package:live_cells/live_cells.dart';
+import 'package:live_cells_core/live_cells_core.dart';
 
 part 'person.g.dart';
 
@@ -81,7 +77,7 @@ class Person {
 Then run the following command:
 
 ```shell
-flutter pub run build_runner build
+dart run build_runner build
 ```
 
 This will generate an extension for `ValueCell<Person>`, called `PersonCellExtension` which
@@ -94,7 +90,7 @@ provides accessors for the properties of the `Person` class:
 
 This allows you to access properties of `Person` objects held in a cell.
 
-For example, you have a `ValueCell` holding a `Person`:
+For example, if you have a `ValueCell` holding a `Person`:
 
 ```dart
 final ValueCell<Person> person;
@@ -158,7 +154,7 @@ properties to be modified via the `MutableCell`'s.
 Using the class from the previous example:
 
 ```dart
-import 'package:live_cells/live_cells.dart';
+import 'package:live_cells_core/live_cells_core.dart';
 
 part 'person.g.dart';
 
