@@ -360,16 +360,20 @@ class CellExtensionGenerator extends GeneratorForAnnotation<CellExtension> {
         ? refer(fieldValue)
         : refer(valueVar).property(param.name!);
 
-    final fields = constructor.formalParameters
-      .where((param) {
-        if (param.isInitializingFormal && param is FieldFormalParameterElement) {
-          return !allReservedFieldNames.contains(param.field?.name);
-        }
+    bool isFieldFormal(FormalParameterElement param) => switch(param) {
+      FieldFormalParameterElement _ =>
+        !allReservedFieldNames.contains(param.field?.name),
 
-        return param.isSuperFormal &&
-            param is SuperFormalParameterElement &&
-            param.superConstructorParameter != null;
-      })
+      SuperFormalParameterElement(
+        superConstructorParameter: final superParam
+      ) when superParam != null =>
+          isFieldFormal(superParam),
+
+      _ => false
+    };
+
+    final fields = constructor.formalParameters
+      .where(isFieldFormal)
       .map(getFieldFormal);
 
     final named = Map.fromEntries(
